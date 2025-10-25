@@ -26,4 +26,124 @@ export type RegisterInput = {
   name?: string;
 };
 
+// Category interfaces
+export type Category = {
+  _id: string;
+  name: string;
+  description: string;
+  slug: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CategoriesResponse = {
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  items: Category[];
+};
+
+export type CategoriesQueryParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  filters?: {
+    isActive?: boolean;
+  };
+};
+
+// Cart interfaces
+export type Cart = {
+  _id: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CartItem = {
+  _id: string;
+  cartId: string;
+  productId: string;
+  productVariantId: string;
+  quantity: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AddToCartRequest = {
+  productId: string;
+  productVariantId: string;
+  quantity: number;
+};
+
+export type UpdateCartItemRequest = {
+  productId: string;
+  productVariantId: string;
+  quantity: number;
+  cartItemId: string;
+};
+
+// Order interfaces
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type PaymentStatus = 'pending' | 'paid' | 'failed';
+export type PaymentMethod = 'cash_on_delivery' | 'credit_card' | 'bank_transfer';
+
+export type OrderItem = {
+  productId: string;
+  productVariantId: string;
+  basePrice: number;
+  quantity: number;
+  totalPrice: number;
+};
+
+export type Order = {
+  _id: string;
+  userId: string;
+  totalPrice: number;
+  discount: number;
+  totalAmount: number;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
+  shippingPhone: string;
+  shippingAddress: string;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+  items: OrderItem[];
+};
+
+export type CreateOrderRequest = {
+  shippingPhone: string;
+  shippingAddress: string;
+  paymentMethod: PaymentMethod;
+  note?: string;
+};
+
+export type OrdersQueryParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  status?: OrderStatus;
+  paymentStatus?: PaymentStatus;
+};
+
+export type OrdersResponse = {
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  items: Order[];
+};
+
 

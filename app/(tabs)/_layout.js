@@ -21,17 +21,31 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          title: 'Home',
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
         }}
       />
       <Tabs.Screen
         name="product"
         options={{
+          title: 'Product',
           tabBarIcon: ({ color }) => <TabBarIcon name="shopping-bag" color={color} />,
         }}
       />
-      <Tabs.Screen name="cart" options={{ tabBarIcon: ({ color }) => <TabBarIcon name="shopping-cart" color={color} /> }} />
-      <Tabs.Screen name="profile" options={{ tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} /> }} />
+      <Tabs.Screen 
+        name="orders" 
+        options={{ 
+          title: 'Order',
+          tabBarIcon: ({ color }) => <TabBarIcon name="list-alt" color={color} /> 
+        }} 
+      />
+      <Tabs.Screen 
+        name="profile" 
+        options={{ 
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <TabBarIcon name="cog" color={color} /> 
+        }} 
+      />
     </Tabs>
   );
 }

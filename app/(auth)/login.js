@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Toast } from '../../components/Toast';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { useLoginViewModel } from '../../viewmodels/useLoginViewModel';
@@ -8,13 +9,16 @@ import { useLoginViewModel } from '../../viewmodels/useLoginViewModel';
 export default function LoginScreen() {
   const router = useRouter();
   const { state, actions } = useLoginViewModel();
-  const { email, password, loading } = state;
-  const { setEmail, setPassword, submit } = actions;
+  const { email, password, loading, error } = state;
+  const { setEmail, setPassword, submit, clearError } = actions;
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('error');
 
   // Animation on mount
   useEffect(() => {
@@ -41,6 +45,15 @@ export default function LoginScreen() {
     }
   }, [email]);
 
+  // Show toast when there's an error
+  useEffect(() => {
+    if (error) {
+      setToastMessage(error);
+      setToastType('error');
+      setShowToast(true);
+    }
+  }, [error]);
+
   // Validate password in real-time
   useEffect(() => {
     if (password && password.length < 6) {
@@ -53,12 +66,28 @@ export default function LoginScreen() {
   const onLogin = async () => {
     const result = await submit();
     if (result?.ok) {
-      router.replace('/(tabs)');
+      setToastMessage('Đăng nhập thành công!');
+      setToastType('success');
+      setShowToast(true);
+      setTimeout(() => {
+        router.replace('/(tabs)');
+      }, 1000);
     }
+  };
+
+  const handleToastHide = () => {
+    setShowToast(false);
+    clearError();
   };
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        type={toastType}
+        onHide={handleToastHide}
+      />
       <View style={styles.formContainer}>
         <Text style={styles.title}>Đăng nhập</Text>
         <Text style={styles.subtitle}>

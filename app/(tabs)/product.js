@@ -1,14 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Image, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { ProductsAPI } from '../../services/productsAPI';
+import { useCartViewModel } from '../../viewmodels/useCartViewModel';
 
 export default function ProductsScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
+  const router = useRouter();
+  
+  // Cart functionality
+  const { addToCart, isAddingToCart } = useCartViewModel();
   
   // State management
   const [products, setProducts] = useState([]);
@@ -89,44 +95,72 @@ export default function ProductsScreen() {
     }
   };
 
+  // Handle add to cart
+  const handleAddToCart = async (product) => {
+    try {
+      await addToCart({
+        productId: product._id,
+        productVariantId: product._id, // Using product ID as variant ID for simplicity
+        quantity: 1
+      });
+      Alert.alert('Thành công', 'Đã thêm sản phẩm vào giỏ hàng');
+    } catch (err) {
+      Alert.alert('Lỗi', 'Không thể thêm sản phẩm vào giỏ hàng');
+    }
+  };
+
   // Render product item
   const renderProduct = ({ item }) => (
-    <TouchableOpacity
-      style={[styles.productCard, { backgroundColor: theme.background, borderColor: theme.muted }]}
-      onPress={() => {
-        // Navigate to product detail
-        console.log('Navigate to product:', item.name);
-      }}
-    >
-      <View style={styles.productImageContainer}>
-        <Image 
-          source={{ uri: 'https://via.placeholder.com/200x200/007AFF/FFFFFF?text=' + encodeURIComponent(item.name) }} 
-          style={styles.productImage} 
-        />
-        {!item.isActive && (
-          <View style={styles.inactiveOverlay}>
-            <Text style={styles.inactiveText}>Không hoạt động</Text>
-          </View>
-        )}
-      </View>
-      
-      <View style={styles.productInfo}>
-        <Text style={[styles.productName, { color: theme.text }]} numberOfLines={2}>
-          {item.name}
-        </Text>
-        <Text style={[styles.productCode, { color: theme.tabIconDefault }]}>
-          Mã: {item.code}
-        </Text>
-        <Text style={[styles.productCategory, { color: theme.primary }]}>
-          {item.categoryName}
-        </Text>
-        {item.description && (
-          <Text style={[styles.productDescription, { color: theme.tabIconDefault }]} numberOfLines={2}>
-            {item.description}
+    <View style={[styles.productCard, { backgroundColor: theme.background, borderColor: theme.muted }]}>
+      <TouchableOpacity
+        onPress={() => {
+          // Navigate to product detail
+          console.log('Navigate to product:', item.name);
+        }}
+        style={styles.productContent}
+      >
+        <View style={styles.productImageContainer}>
+          <Image 
+            source={{ uri: 'https://via.placeholder.com/200x200/007AFF/FFFFFF?text=' + encodeURIComponent(item.name) }} 
+            style={styles.productImage} 
+          />
+          {!item.isActive && (
+            <View style={styles.inactiveOverlay}>
+              <Text style={styles.inactiveText}>Không hoạt động</Text>
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.productInfo}>
+          <Text style={[styles.productName, { color: theme.text }]} numberOfLines={2}>
+            {item.name}
           </Text>
+          <Text style={[styles.productCode, { color: theme.tabIconDefault }]}>
+            Mã: {item.code}
+          </Text>
+          <Text style={[styles.productCategory, { color: theme.primary }]}>
+            {item.categoryName}
+          </Text>
+          {item.description && (
+            <Text style={[styles.productDescription, { color: theme.tabIconDefault }]} numberOfLines={2}>
+              {item.description}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={[styles.addToCartBtn, { backgroundColor: theme.primary }]}
+        onPress={() => handleAddToCart(item)}
+        disabled={isAddingToCart || !item.isActive}
+      >
+        {isAddingToCart ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <Text style={styles.addToCartText}>Thêm vào giỏ</Text>
         )}
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 
   // Render footer for loading more
@@ -158,7 +192,18 @@ export default function ProductsScreen() {
       <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.muted }]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Sản phẩm</Text>
+        <View style={styles.headerTop}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Sản phẩm</Text>
+          <TouchableOpacity 
+            style={styles.headerIcon}
+            onPress={() => router.push('/(tabs)/orders')}
+          >
+            <Ionicons name="cart-outline" size={24} color={theme.text} />
+            <View style={styles.cartBadge}>
+              <Text style={styles.badgeText}>3</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
         <View style={styles.searchContainer}>
           <Ionicons name="search" size={20} color={theme.tabIconDefault} style={styles.searchIcon} />
           <TextInput
@@ -216,10 +261,35 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    marginBottom: 16,
+  },
+  headerIcon: {
+    position: 'relative',
+    padding: 8,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -243,15 +313,18 @@ const styles = StyleSheet.create({
   },
   productCard: {
     flex: 1,
-    margin: 6,
-    borderRadius: 16,
-    padding: 12,
+    margin: 8,
+    borderRadius: 20,
+    padding: 16,
     borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  productContent: {
+    flex: 1,
   },
   productImageContainer: {
     position: 'relative',
@@ -259,8 +332,8 @@ const styles = StyleSheet.create({
   },
   productImage: {
     width: '100%',
-    height: 120,
-    borderRadius: 12,
+    height: 140,
+    borderRadius: 16,
   },
   inactiveOverlay: {
     position: 'absolute',
@@ -282,10 +355,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   productName: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-    lineHeight: 18,
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 6,
+    lineHeight: 20,
   },
   productCode: {
     fontSize: 12,
@@ -299,6 +372,19 @@ const styles = StyleSheet.create({
   productDescription: {
     fontSize: 12,
     lineHeight: 16,
+  },
+  addToCartBtn: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addToCartText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700',
   },
   // Loading styles
   loadingContainer: {

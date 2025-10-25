@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Toast } from '../../components/Toast';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { AuthService } from '../../services/authService';
@@ -20,6 +21,9 @@ export default function RegisterChooserScreen() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordValidation, setPasswordValidation] = useState(null);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('error');
 
   // Animation on mount
   useEffect(() => {
@@ -65,18 +69,24 @@ export default function RegisterChooserScreen() {
   const submit = async () => {
     // Check if at least one contact method is provided
     if (!phone.trim() && !email.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập ít nhất email hoặc số điện thoại');
+      setToastMessage('Vui lòng nhập ít nhất email hoặc số điện thoại');
+      setToastType('error');
+      setShowToast(true);
       return;
     }
 
     if (!password) {
-      Alert.alert('Lỗi', 'Vui lòng nhập mật khẩu');
+      setToastMessage('Vui lòng nhập mật khẩu');
+      setToastType('error');
+      setShowToast(true);
       return;
     }
 
     // Check for validation errors
     if (phoneError || emailError || passwordError) {
-      Alert.alert('Lỗi', 'Vui lòng sửa các lỗi validation trước khi tiếp tục');
+      setToastMessage('Vui lòng sửa các lỗi validation trước khi tiếp tục');
+      setToastType('error');
+      setShowToast(true);
       return;
     }
     
@@ -102,8 +112,12 @@ export default function RegisterChooserScreen() {
       const result = await AuthService.register(registerData);
       console.log('AuthService.register completed:', result);
       
-      Alert.alert('Thành công', 'Tạo tài khoản thành công, hãy đăng nhập.');
-      router.replace('/(auth)/login');
+      setToastMessage('Tạo tài khoản thành công! Hãy đăng nhập.');
+      setToastType('success');
+      setShowToast(true);
+      setTimeout(() => {
+        router.replace('/(auth)/login');
+      }, 1500);
     } catch (e) {
       console.error('Registration error details:', e);
       console.error('Error message:', e.message);
@@ -111,18 +125,23 @@ export default function RegisterChooserScreen() {
       
       const errorMessage = e.message || 'Đăng ký thất bại. Vui lòng thử lại.';
       
-      // Show different alert based on error type
+      // Show different toast based on error type
       if (errorMessage.includes('API đăng ký không khả dụng')) {
-        Alert.alert(
-          'Lỗi hệ thống', 
-          'API đăng ký hiện không khả dụng. Vui lòng thử lại sau hoặc liên hệ admin để được hỗ trợ.',
-          [
-            { text: 'Thử lại', onPress: () => submit() },
-            { text: 'Hủy', style: 'cancel' }
-          ]
-        );
+        setToastMessage('API đăng ký hiện không khả dụng. Vui lòng thử lại sau.');
+        setToastType('error');
+        setShowToast(true);
+      } else if (errorMessage.includes('Email hoặc số điện thoại đã được sử dụng')) {
+        setToastMessage('Email hoặc số điện thoại đã được sử dụng');
+        setToastType('error');
+        setShowToast(true);
+      } else if (errorMessage.includes('Không có kết nối mạng')) {
+        setToastMessage('Không có kết nối mạng. Vui lòng kiểm tra internet');
+        setToastType('error');
+        setShowToast(true);
       } else {
-        Alert.alert('Đăng ký thất bại', errorMessage);
+        setToastMessage(errorMessage);
+        setToastType('error');
+        setShowToast(true);
       }
     } finally {
       console.log('Setting loading to false');
@@ -130,8 +149,18 @@ export default function RegisterChooserScreen() {
     }
   };
 
+  const handleToastHide = () => {
+    setShowToast(false);
+  };
+
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        type={toastType}
+        onHide={handleToastHide}
+      />
       <View style={styles.formContainer}>
         <Text style={styles.title}>Đăng ký tài khoản</Text>
         <Text style={styles.subtitle}>

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Toast } from '../../components/Toast';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { ForgotPasswordAPI } from '../../services/forgotPasswordAPI';
@@ -17,6 +18,9 @@ export default function ForgotScreen() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordValidation, setPasswordValidation] = useState(null);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('error');
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
 
@@ -53,6 +57,9 @@ export default function ForgotScreen() {
   const requestReset = async () => {
     if (!email.trim()) {
       setEmailError('Vui lòng nhập email');
+      setToastMessage('Vui lòng nhập email');
+      setToastType('error');
+      setShowToast(true);
       return;
     }
     
@@ -63,10 +70,17 @@ export default function ForgotScreen() {
     setLoading(true);
     try {
       await ForgotPasswordAPI.requestReset(email.trim());
-      Alert.alert('Thành công', 'Email reset mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư.');
-      setStep(2);
+      setToastMessage('Email reset mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư.');
+      setToastType('success');
+      setShowToast(true);
+      setTimeout(() => {
+        setStep(2);
+      }, 1500);
     } catch (error) {
-      Alert.alert('Lỗi', error.message || 'Gửi email thất bại. Vui lòng thử lại.');
+      const errorMessage = error.message || 'Gửi email thất bại. Vui lòng thử lại.';
+      setToastMessage(errorMessage);
+      setToastType('error');
+      setShowToast(true);
     } finally {
       setLoading(false);
     }
@@ -74,12 +88,16 @@ export default function ForgotScreen() {
 
   const resetPassword = async () => {
     if (!rawToken.trim() || !newPassword || !confirmPassword) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin.');
+      setToastMessage('Vui lòng nhập đầy đủ thông tin.');
+      setToastType('error');
+      setShowToast(true);
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp.');
+      setToastMessage('Mật khẩu xác nhận không khớp.');
+      setToastType('error');
+      setShowToast(true);
       return;
     }
     
@@ -90,17 +108,34 @@ export default function ForgotScreen() {
     setLoading(true);
     try {
       await ForgotPasswordAPI.setNewPassword(rawToken.trim(), newPassword, confirmPassword);
-      Alert.alert('Thành công', 'Mật khẩu đã được đặt lại. Hãy đăng nhập.');
-      router.replace('/(auth)/login');
+      setToastMessage('Mật khẩu đã được đặt lại thành công! Hãy đăng nhập.');
+      setToastType('success');
+      setShowToast(true);
+      setTimeout(() => {
+        router.replace('/(auth)/login');
+      }, 1500);
     } catch (error) {
-      Alert.alert('Lỗi', error.message || 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.');
+      const errorMessage = error.message || 'Đặt lại mật khẩu thất bại. Vui lòng thử lại.';
+      setToastMessage(errorMessage);
+      setToastType('error');
+      setShowToast(true);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleToastHide = () => {
+    setShowToast(false);
+  };
+
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      <Toast
+        visible={showToast}
+        message={toastMessage}
+        type={toastType}
+        onHide={handleToastHide}
+      />
       {step === 1 ? (
         <View style={styles.formContainer}>
           <Text style={styles.title}>Quên mật khẩu</Text>

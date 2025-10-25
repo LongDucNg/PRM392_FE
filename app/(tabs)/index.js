@@ -1,80 +1,65 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Toast } from '../../components/Toast';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
+import { useHomeViewModel } from '../../viewmodels/useHomeViewModel';
 
-// Mock data categories
-const categories = [
-  { id: '1', name: 'RAM laptop', icon: '💾' },
-  { id: '2', name: 'PC', icon: '🖥️' },
-  { id: '3', name: 'Ổ cứng SSD di động', icon: '💿' },
-  { id: '4', name: 'Ổ cứng HDD di động', icon: '💽' },
-];
-
-// Mock data sản phẩm
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Arduino Uno R3',
-    price: 150000,
-    image: 'https://via.placeholder.com/200x200/FF6B6B/FFFFFF?text=Arduino',
-    category: 'Module Arduino/Raspberry Pi',
-    rating: 4.8,
-    reviews: 124,
-  },
-  {
-    id: '2',
-    name: 'Raspberry Pi 4 Model B',
-    price: 1200000,
-    image: 'https://via.placeholder.com/200x200/4ECDC4/FFFFFF?text=Raspberry',
-    category: 'Module Arduino/Raspberry Pi',
-    rating: 4.9,
-    reviews: 89,
-  },
-  {
-    id: '3',
-    name: 'Cảm biến nhiệt độ DHT22',
-    price: 85000,
-    image: 'https://via.placeholder.com/200x200/45B7D1/FFFFFF?text=DHT22',
-    category: 'Cảm biến',
-    rating: 4.7,
-    reviews: 156,
-  },
-  {
-    id: '4',
-    name: 'Module Relay 4 kênh',
-    price: 120000,
-    image: 'https://via.placeholder.com/200x200/96CEB4/FFFFFF?text=Relay',
-    category: 'Module Arduino/Raspberry Pi',
-    rating: 4.6,
-    reviews: 78,
-  },
-  {
-    id: '5',
-    name: 'IC 555 Timer',
-    price: 15000,
-    image: 'https://via.placeholder.com/200x200/FFEAA7/FFFFFF?text=IC555',
-    category: 'IC & Vi điều khiển',
-    rating: 4.5,
-    reviews: 203,
-  },
-  {
-    id: '6',
-    name: 'Resistor 1KΩ (100 cái)',
-    price: 25000,
-    image: 'https://via.placeholder.com/200x200/DDA0DD/FFFFFF?text=Resistor',
-    category: 'Linh kiện cơ bản',
-    rating: 4.4,
-    reviews: 167,
-  },
-];
+// Category icons mapping với Ionicons hiện đại
+const getCategoryIcon = (categoryName) => {
+  const iconMap = {
+    'RAM laptop': 'hardware-chip',
+    'PC': 'desktop',
+    'Ổ cứng SSD di động': 'server',
+    'Ổ cứng HDD di động': 'disc',
+    'Module Arduino/Raspberry Pi': 'construct',
+    'Cảm biến': 'radio',
+    'IC & Vi điều khiển': 'flash',
+    'Linh kiện cơ bản': 'bulb',
+    'Điện tử': 'battery-charging',
+    'Máy tính': 'laptop',
+    'Phụ kiện': 'headset',
+    'Khác': 'cube'
+  };
+  
+  // Tìm icon phù hợp dựa trên tên category
+  for (const [key, icon] of Object.entries(iconMap)) {
+    if (categoryName.toLowerCase().includes(key.toLowerCase())) {
+      return icon;
+    }
+  }
+  
+  return 'cube'; // Default icon
+};
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
   const router = useRouter();
+  const { state, actions } = useHomeViewModel();
+  const { categories, featuredProducts, loading, error } = state;
+  const { loadData, refreshData, clearError } = actions;
+  
+  // State for segmented control
+  const [selectedSegment, setSelectedSegment] = useState(0);
+
+  // Load data on mount
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Handle refresh
+  const handleRefresh = () => {
+    refreshData();
+  };
+
+  // Handle error
+  const handleErrorDismiss = () => {
+    clearError();
+  };
 
   const renderCategory = ({ item }) => (
     <TouchableOpacity
@@ -82,10 +67,11 @@ export default function HomeScreen() {
       onPress={() => {
         // Navigate to products with filter
         console.log('Navigate to category:', item.name);
+        router.push('/(tabs)/product');
       }}
     >
       <View style={styles.categoryIconContainer}>
-        <Text style={styles.categoryIcon}>{item.icon}</Text>
+        <Ionicons name={getCategoryIcon(item.name)} size={24} color={theme.primary} />
       </View>
       <Text style={styles.categoryName}>{item.name}</Text>
     </TouchableOpacity>
@@ -97,35 +83,90 @@ export default function HomeScreen() {
       onPress={() => {
         // Navigate to product detail
         console.log('Navigate to product:', item.name);
+        router.push('/(tabs)/product');
       }}
     >
-      <Image source={{ uri: item.image }} style={styles.productImage} />
+      <Image 
+        source={{ 
+          uri: `https://via.placeholder.com/200x200/007AFF/FFFFFF?text=${encodeURIComponent(item.name)}` 
+        }} 
+        style={styles.productImage} 
+      />
       <View style={styles.productInfo}>
         <Text style={[styles.productName, { color: theme.text }]} numberOfLines={2}>
           {item.name}
         </Text>
-        <View style={styles.ratingContainer}>
-          <Ionicons name="star" size={12} color="#FFD700" />
-          <Text style={styles.ratingText}>{item.rating}</Text>
-          <Text style={styles.reviewsText}>({item.reviews})</Text>
-        </View>
-        <Text style={[styles.productPrice, { color: theme.primary }]}>
-          {item.price.toLocaleString('vi-VN')} ₫
+        <Text style={[styles.productCode, { color: theme.tabIconDefault }]}>
+          Mã: {item.code}
+        </Text>
+        <Text style={[styles.productCategory, { color: theme.primary }]}>
+          {item.categoryName}
         </Text>
         <TouchableOpacity 
           style={styles.addToCartButton}
-          onPress={() => router.push('/(tabs)/cart')}
+          onPress={() => router.push('/(tabs)/product')}
         >
           <Ionicons name="add" size={16} color="white" />
-          <Text style={styles.addToCartText}>Giỏ hàng</Text>
+          <Text style={styles.addToCartText}>Xem chi tiết</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 
+  // Segmented Control Component
+  const SegmentedControl = () => (
+    <View style={[styles.segmentedControl, { backgroundColor: theme.muted }]}>
+      <TouchableOpacity
+        style={[
+          styles.segmentButton,
+          selectedSegment === 0 && { backgroundColor: theme.primary }
+        ]}
+        onPress={() => setSelectedSegment(0)}
+      >
+        <Text style={[
+          styles.segmentText,
+          { color: selectedSegment === 0 ? 'white' : theme.text }
+        ]}>
+          Sản phẩm nổi bật
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          styles.segmentButton,
+          selectedSegment === 1 && { backgroundColor: theme.primary }
+        ]}
+        onPress={() => setSelectedSegment(1)}
+      >
+        <Text style={[
+          styles.segmentText,
+          { color: selectedSegment === 1 ? 'white' : theme.text }
+        ]}>
+          Danh mục
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
-      <ScrollView style={[styles.container, { backgroundColor: theme.background }]} showsVerticalScrollIndicator={false}>
+      <Toast
+        visible={!!error}
+        message={error || ''}
+        type="error"
+        onHide={handleErrorDismiss}
+      />
+      <ScrollView 
+        style={[styles.container, { backgroundColor: theme.background }]} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={handleRefresh}
+            colors={[theme.primary]}
+            tintColor={theme.primary}
+          />
+        }
+      >
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -155,60 +196,64 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Categories Section */}
+      {/* Segmented Control */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Danh mục nổi bật</Text>
-          <View style={styles.sectionSubtitle}>
-            <Text style={[styles.sectionSubtitleText, { color: theme.tabIconDefault }]}>Khám phá sản phẩm</Text>
+        <SegmentedControl />
+      </View>
+
+      {/* Content based on selected segment */}
+      {selectedSegment === 0 ? (
+        /* Featured Products Section */
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Sản phẩm nổi bật</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/product')}>
+              <Text style={[styles.seeAllText, { color: theme.primary }]}>Xem tất cả</Text>
+            </TouchableOpacity>
           </View>
+          {loading && featuredProducts.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={theme.primary} />
+              <Text style={[styles.loadingText, { color: theme.text }]}>Đang tải sản phẩm...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={featuredProducts.slice(0, 4)} // Chỉ hiển thị 4 sản phẩm
+              renderItem={renderProduct}
+              keyExtractor={(item) => item._id}
+              numColumns={2}
+              scrollEnabled={false}
+              contentContainerStyle={styles.productsList}
+            />
+          )}
         </View>
-        <FlatList
-          data={categories}
-          renderItem={renderCategory}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          scrollEnabled={false}
-          contentContainerStyle={styles.categoriesList}
-        />
-      </View>
+      ) : (
+        /* Categories Section */
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Danh mục sản phẩm</Text>
+            <View style={styles.sectionSubtitle}>
+              <Text style={[styles.sectionSubtitleText, { color: theme.tabIconDefault }]}>Khám phá sản phẩm</Text>
+            </View>
+          </View>
+          {loading && categories.length === 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={theme.primary} />
+              <Text style={[styles.loadingText, { color: theme.text }]}>Đang tải danh mục...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={categories}
+              renderItem={renderCategory}
+              keyExtractor={(item) => item._id}
+              numColumns={2}
+              scrollEnabled={false}
+              contentContainerStyle={styles.categoriesList}
+            />
+          )}
+        </View>
+      )}
 
-      {/* Featured Products Section */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Sản phẩm nổi bật</Text>
-          <TouchableOpacity>
-            <Text style={[styles.seeAllText, { color: theme.primary }]}>Xem tất cả</Text>
-          </TouchableOpacity>
-        </View>
-        <FlatList
-          data={mockProducts}
-          renderItem={renderProduct}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          scrollEnabled={false}
-          contentContainerStyle={styles.productsList}
-        />
-      </View>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={[styles.footerTitle, { color: theme.text }]}>Liên kết nhanh</Text>
-        <View style={styles.footerLinks}>
-          <TouchableOpacity style={styles.footerLink}>
-            <Ionicons name="headset-outline" size={20} color={theme.primary} />
-            <Text style={[styles.footerLinkText, { color: theme.text }]}>CSKH</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.footerLink}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={theme.primary} />
-            <Text style={[styles.footerLinkText, { color: theme.text }]}>Bảo hành</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.footerLink}>
-            <Ionicons name="call-outline" size={20} color={theme.primary} />
-            <Text style={[styles.footerLinkText, { color: theme.text }]}>Liên hệ</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -335,9 +380,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  categoryIcon: {
-    fontSize: 24,
-  },
   categoryName: {
     fontSize: 13,
     fontWeight: '600',
@@ -411,28 +453,45 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  // Footer styles
-  footer: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-  },
-  footerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  footerLinks: {
+  // Loading styles
+  loadingContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  footerLink: {
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 20,
     gap: 8,
   },
-  footerLinkText: {
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  // Product info styles
+  productCode: {
+    fontSize: 12,
+    marginBottom: 4,
+    color: '#666',
+  },
+  productCategory: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+  // Segmented Control styles
+  segmentedControl: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+  },
+  segmentButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentText: {
     fontSize: 14,
     fontWeight: '600',
   },
