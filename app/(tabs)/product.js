@@ -1,16 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { ProductsAPI } from '../../services/productsAPI';
+import { ProductVariantsAPI } from '../../services/productVariantsAPI';
 import { useCartViewModel } from '../../viewmodels/useCartViewModel';
 
 export default function ProductsScreen() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  // Force light mode
+  const colorScheme = 'light';
+  const theme = Colors[colorScheme];
   const router = useRouter();
   
   // Cart functionality
@@ -24,6 +25,7 @@ export default function ProductsScreen() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [productPrices, setProductPrices] = useState({}); // Lưu price cho từng sản phẩm
 
   // Load products function
   const loadProducts = async (page = 1, search = '', reset = false) => {
@@ -60,12 +62,40 @@ export default function ProductsScreen() {
       setHasMore(page < (meta.totalPages || 1));
       setCurrentPage(page);
       
+      // Load prices for all products
+      await loadProductPrices(items);
+      
     } catch (error) {
       console.error('Error loading products:', error);
       Alert.alert('Lỗi', error.message || 'Không thể tải danh sách sản phẩm');
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  // Load prices from product variants
+  const loadProductPrices = async (productsToLoad) => {
+    try {
+      const prices = {};
+      for (const product of productsToLoad) {
+        try {
+          // Lấy variant đầu tiên của sản phẩm để lấy price
+          const variantsResponse = await ProductVariantsAPI.getVariantsByProductId(product._id);
+          if (variantsResponse && variantsResponse.length > 0) {
+            // Lấy variant có giá thấp nhất
+            const minPriceVariant = variantsResponse.reduce((min, variant) => 
+              variant.price < min.price ? variant : min
+            );
+            prices[product._id] = minPriceVariant.price;
+          }
+        } catch (error) {
+          console.error(`Error loading price for product ${product._id}:`, error);
+        }
+      }
+      setProductPrices(prev => ({ ...prev, ...prices }));
+    } catch (error) {
+      console.error('Error loading product prices:', error);
     }
   };
 
@@ -98,14 +128,52 @@ export default function ProductsScreen() {
   // Handle add to cart
   const handleAddToCart = async (product) => {
     try {
-      await addToCart({
+      // Validate product data before adding to cart
+      if (!product || !product._id) {
+        Alert.alert('Lỗi', 'Thông tin sản phẩm không hợp lệ');
+        return;
+      }
+
+      // Get the first variant of the product
+      let productVariantId = product._id; // Fallback to product ID
+      
+      try {
+        const variants = await ProductVariantsAPI.getVariantsByProductId(product._id);
+        if (variants && variants.length > 0) {
+          productVariantId = variants[0]._id;
+        }
+      } catch (variantError) {
+        console.warn('Could not load variants, using product ID as variant ID:', variantError);
+        // Continue with product ID as variant ID
+      }
+
+      console.log('Adding to cart:', {
         productId: product._id,
-        productVariantId: product._id, // Using product ID as variant ID for simplicity
+        productVariantId: productVariantId,
+        quantity: 1,
+        productName: product.name
+      });
+
+      const result = await addToCart({
+        productId: product._id,
+        productVariantId: productVariantId,
         quantity: 1
       });
-      Alert.alert('Thành công', 'Đã thêm sản phẩm vào giỏ hàng');
+      
+      // Check if it was saved locally due to API failure
+      if (result._id && result._id.startsWith('local_')) {
+        // API failed but successfully saved to local storage
+        Alert.alert(
+          'Đã thêm vào giỏ hàng', 
+          'Sản phẩm đã được thêm vào giỏ hàng. Dữ liệu sẽ được đồng bộ khi server sẵn sàng.'
+        );
+      } else {
+        // Successfully saved to server
+        Alert.alert('Thành công', 'Đã thêm sản phẩm vào giỏ hàng');
+      }
     } catch (err) {
-      Alert.alert('Lỗi', 'Không thể thêm sản phẩm vào giỏ hàng');
+      console.error('Add to cart error:', err);
+      Alert.alert('Lỗi', err.message || 'Không thể thêm sản phẩm vào giỏ hàng');
     }
   };
 
@@ -115,15 +183,18 @@ export default function ProductsScreen() {
       <TouchableOpacity
         onPress={() => {
           // Navigate to product detail
-          console.log('Navigate to product:', item.name);
+          router.push({
+            pathname: '/(tabs)/product-detail',
+            params: { productId: item._id }
+          });
         }}
         style={styles.productContent}
       >
-        <View style={styles.productImageContainer}>
-          <Image 
-            source={{ uri: 'https://via.placeholder.com/200x200/007AFF/FFFFFF?text=' + encodeURIComponent(item.name) }} 
-            style={styles.productImage} 
-          />
+        {/* Icon container thay vì ảnh */}
+        <View style={styles.productIconContainer}>
+          <View style={[styles.iconWrapper, { backgroundColor: theme.primary + '15' }]}>
+            <Ionicons name="cube-outline" size={48} color={theme.primary} />
+          </View>
           {!item.isActive && (
             <View style={styles.inactiveOverlay}>
               <Text style={styles.inactiveText}>Không hoạt động</Text>
@@ -144,6 +215,12 @@ export default function ProductsScreen() {
           {item.description && (
             <Text style={[styles.productDescription, { color: theme.tabIconDefault }]} numberOfLines={2}>
               {item.description}
+            </Text>
+          )}
+          {/* Hiển thị giá từ product variants */}
+          {productPrices[item._id] && (
+            <Text style={[styles.productPrice, { color: theme.primary }]}>
+              {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(productPrices[item._id])}
             </Text>
           )}
         </View>
@@ -196,7 +273,7 @@ export default function ProductsScreen() {
           <Text style={[styles.headerTitle, { color: theme.text }]}>Sản phẩm</Text>
           <TouchableOpacity 
             style={styles.headerIcon}
-            onPress={() => router.push('/(tabs)/orders')}
+            onPress={() => router.push('/(tabs)/cart')}
           >
             <Ionicons name="cart-outline" size={24} color={theme.text} />
             <View style={styles.cartBadge}>
@@ -326,14 +403,19 @@ const styles = StyleSheet.create({
   productContent: {
     flex: 1,
   },
-  productImageContainer: {
+  productIconContainer: {
     position: 'relative',
     marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 100,
   },
-  productImage: {
-    width: '100%',
-    height: 140,
-    borderRadius: 16,
+  iconWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   inactiveOverlay: {
     position: 'absolute',
@@ -342,13 +424,13 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 12,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   inactiveText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
   },
   productInfo: {
@@ -372,6 +454,11 @@ const styles = StyleSheet.create({
   productDescription: {
     fontSize: 12,
     lineHeight: 16,
+  },
+  productPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginTop: 8,
   },
   addToCartBtn: {
     marginTop: 12,

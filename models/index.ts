@@ -62,6 +62,7 @@ export type CategoriesQueryParams = {
 export type Cart = {
   _id: string;
   userId: string;
+  items?: CartItem[]; // Optional items array
   createdAt: string;
   updatedAt: string;
 };
@@ -72,8 +73,17 @@ export type CartItem = {
   productId: string;
   productVariantId: string;
   quantity: number;
+  unitPrice: number;
+  totalPrice: number;
   createdAt: string;
   updatedAt: string;
+  // Optional populated fields
+  productName?: string;
+  productCode?: string;
+  variant?: {
+    variant: string;
+    value: string;
+  };
 };
 
 export type AddToCartRequest = {

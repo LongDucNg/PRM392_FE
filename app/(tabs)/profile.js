@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { AuthService } from '../../services/authService';
 import { useAuthStore } from '../../state/auth';
@@ -12,8 +11,9 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const logoutFromStore = useAuthStore((s) => s.logout);
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const theme = useMemo(() => Colors[colorScheme ?? 'light'], [colorScheme]);
+  // Force light mode
+  const colorScheme = 'light';
+  const theme = useMemo(() => Colors[colorScheme], [colorScheme]);
 
   const handleLogout = async () => {
     try {
@@ -65,41 +65,33 @@ export default function SettingsScreen() {
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Settings</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Cài đặt</Text>
         </View>
 
         {/* General Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>General</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Chung</Text>
           <View style={[styles.sectionContent, { backgroundColor: theme.background, borderColor: theme.muted }]}>
-            {renderMenuItem('person-outline', 'Edit Profile', () => {
+            {renderMenuItem('person-outline', 'Chỉnh sửa hồ sơ', () => {
               // Navigate to edit profile
               console.log('Navigate to edit profile');
             })}
-            {renderMenuItem('lock-closed-outline', 'Change Password', () => {
+            {renderMenuItem('lock-closed-outline', 'Đổi mật khẩu', () => {
               // Navigate to change password
               console.log('Navigate to change password');
             })}
-            {renderMenuItem('notifications-outline', 'Notifications', () => {
+            {renderMenuItem('notifications-outline', 'Thông báo', () => {
               // Navigate to notifications
               console.log('Navigate to notifications');
             })}
           </View>
         </View>
 
-        {/* Preferences Section */}
+        {/* Account Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Preferences</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Tài khoản</Text>
           <View style={[styles.sectionContent, { backgroundColor: theme.background, borderColor: theme.muted }]}>
-            {renderMenuItem('shield-outline', 'Legal and Policies', () => {
-              // Navigate to legal and policies
-              console.log('Navigate to legal and policies');
-            })}
-            {renderMenuItem('help-circle-outline', 'Help & Support', () => {
-              // Navigate to help and support
-              console.log('Navigate to help and support');
-            })}
-            {renderMenuItem('log-out-outline', 'Logout', handleLogout, true)}
+            {renderMenuItem('log-out-outline', 'Đăng xuất', handleLogout, true)}
           </View>
         </View>
       </View>

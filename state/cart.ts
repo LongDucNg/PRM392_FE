@@ -83,9 +83,14 @@ export const useCartStore = create<CartState>((set, get) => ({
     if (existingItemIndex >= 0) {
       // Cập nhật số lượng nếu sản phẩm đã tồn tại
       const updatedItems = [...state.cartItems];
+      const existingItem = updatedItems[existingItemIndex];
+      const newQuantity = existingItem.quantity + item.quantity;
+      const newTotalPrice = existingItem.unitPrice * newQuantity;
+      
       updatedItems[existingItemIndex] = {
-        ...updatedItems[existingItemIndex],
-        quantity: updatedItems[existingItemIndex].quantity + item.quantity
+        ...existingItem,
+        quantity: newQuantity,
+        totalPrice: newTotalPrice
       };
       return { cartItems: updatedItems };
     } else {
@@ -95,9 +100,17 @@ export const useCartStore = create<CartState>((set, get) => ({
   }),
   
   updateCartItem: (itemId, updates) => set((state) => ({
-    cartItems: state.cartItems.map((item) =>
-      item._id === itemId ? { ...item, ...updates } : item
-    )
+    cartItems: state.cartItems.map((item) => {
+      if (item._id === itemId) {
+        const updatedItem = { ...item, ...updates };
+        // Recalculate totalPrice if quantity or unitPrice changed
+        if (updates.quantity !== undefined || updates.unitPrice !== undefined) {
+          updatedItem.totalPrice = updatedItem.unitPrice * updatedItem.quantity;
+        }
+        return updatedItem;
+      }
+      return item;
+    })
   })),
   
   removeCartItem: (itemId) => set((state) => ({
@@ -136,9 +149,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   
   getTotalPrice: () => {
     const state = get();
-    // Note: Cần thêm thông tin giá từ product để tính tổng tiền
-    // Hiện tại chỉ trả về số lượng items
-    return state.cartItems.length;
+    return state.cartItems.reduce((total, item) => total + (item.totalPrice || 0), 0);
   },
   
   clearCart: () => set({

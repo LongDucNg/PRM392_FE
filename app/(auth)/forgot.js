@@ -2,7 +2,6 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Toast } from '../../components/Toast';
-import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
 import { ForgotPasswordAPI } from '../../services/forgotPasswordAPI';
 
@@ -21,8 +20,9 @@ export default function ForgotScreen() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('error');
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  // Force light mode
+  const colorScheme = 'light';
+  const theme = Colors[colorScheme];
 
   // Animation on mount
   useEffect(() => {
@@ -146,6 +146,7 @@ export default function ForgotScreen() {
           <View style={styles.inputContainer}>
             <TextInput
               placeholder="Email"
+              placeholderTextColor="#9CA3AF"
               autoCapitalize="none"
               keyboardType="email-address"
               value={email}
@@ -187,7 +188,8 @@ export default function ForgotScreen() {
           
           <View style={styles.inputContainer}>
             <TextInput
-              placeholder="OTP từ email"
+              placeholder="Mã OTP"
+              placeholderTextColor="#9CA3AF"
               autoCapitalize="none"
               value={rawToken}
               onChangeText={setRawToken}
@@ -199,6 +201,7 @@ export default function ForgotScreen() {
           <View style={styles.inputContainer}>
             <TextInput
               placeholder="Mật khẩu mới"
+              placeholderTextColor="#9CA3AF"
               secureTextEntry
               value={newPassword}
               onChangeText={setNewPassword}
@@ -254,6 +257,7 @@ export default function ForgotScreen() {
           <View style={styles.inputContainer}>
             <TextInput
               placeholder="Xác nhận mật khẩu mới"
+              placeholderTextColor="#9CA3AF"
               secureTextEntry
               value={confirmPassword}
               onChangeText={setConfirmPassword}

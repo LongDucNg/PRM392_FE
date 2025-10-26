@@ -1,11 +1,13 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useState } from 'react';
 import {
-    AddToCartRequest,
-    CreateOrderRequest,
-    OrdersQueryParams,
-    UpdateCartItemRequest
+  AddToCartRequest,
+  CartItem,
+  CreateOrderRequest,
+  OrdersQueryParams,
+  UpdateCartItemRequest
 } from '../models';
-import { CartAPI, CartItemsAPI, OrdersAPI } from '../services/cartAPI';
+import { CartAPI, CartItemsAPI, CartItemsService, OrdersAPI } from '../services/cartAPI';
 import { useCartStore } from '../state/cart';
 
 /**
@@ -76,32 +78,88 @@ export const useCartViewModel = () => {
       clearError();
       
       console.log('Lấy thông tin giỏ hàng...');
+      
+      // Fetch cart
       const cartData = await CartAPI.getMyCart();
+      console.log('Cart data received:', cartData);
       setCart(cartData);
       
-      console.log('Lấy giỏ hàng thành công:', cartData);
+      // Fetch cart items separately
+      const cartItemsData = await CartItemsService.getMyCartItems();
+      console.log('Cart items received:', cartItemsData);
+      setCartItems(cartItemsData);
+      
+      console.log('Lấy giỏ hàng thành công:', cartItemsData.length, 'items');
     } catch (err: any) {
       console.error('Lỗi lấy giỏ hàng:', err);
       setError(err.message || 'Không thể lấy thông tin giỏ hàng');
     } finally {
       setLoading(false);
     }
-  }, [setLoading, setCart, setError, clearError]);
+  }, [setLoading, setCart, setCartItems, setError, clearError]);
 
   /**
    * Thêm sản phẩm vào giỏ hàng
    */
   const addToCart = useCallback(async (data: AddToCartRequest) => {
+    setAddingToCart(true);
+    clearError();
+    
     try {
-      setAddingToCart(true);
-      clearError();
+      // Validate request data
+      if (!data.productId || !data.productVariantId || !data.quantity) {
+        const errorMsg = 'Dữ liệu sản phẩm không hợp lệ';
+        console.error('Validation error:', errorMsg, data);
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      if (data.quantity <= 0) {
+        const errorMsg = 'Số lượng phải lớn hơn 0';
+        console.error('Validation error:', errorMsg, data);
+        setError(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      console.log('Thêm sản phẩm vào giỏ hàng:', {
+        productId: data.productId,
+        productVariantId: data.productVariantId,
+        quantity: data.quantity
+      });
       
-      console.log('Thêm sản phẩm vào giỏ hàng:', data);
-      const cartItem = await CartItemsAPI.addToCart(data);
+      // Try API first
+      let cartItem: CartItem;
+      try {
+        cartItem = await CartItemsAPI.addToCart(data);
+      } catch (apiError: any) {
+        console.warn('API failed, using local storage fallback:', apiError);
+        
+        // Fallback: Save to local storage
+        cartItem = {
+          _id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          cartId: 'local_cart',
+          productId: data.productId,
+          productVariantId: data.productVariantId,
+          quantity: data.quantity,
+          unitPrice: 0, // Default price for local storage
+          totalPrice: 0, // Default price for local storage
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        try {
+          // Save to local storage
+          await AsyncStorage.setItem('local_cart_items', JSON.stringify([cartItem]));
+        } catch (storageError) {
+          // If local storage also fails, throw error
+          console.error('Local storage failed:', storageError);
+          setError('Không thể lưu sản phẩm vào giỏ hàng. Vui lòng thử lại sau.');
+          throw new Error('Không thể lưu sản phẩm vào giỏ hàng');
+        }
+      }
       
       // Cập nhật state
       addCartItem(cartItem);
-      
       console.log('Thêm vào giỏ hàng thành công:', cartItem);
       return cartItem;
     } catch (err: any) {

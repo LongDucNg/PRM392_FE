@@ -126,8 +126,13 @@ export class ProductsAPI {
       const response = await api.get(`/v1/products/${id}`);
       const data = response.data;
       
-      console.log('GET product by ID successful:', data);
-      return data;
+      console.log('GET product by ID full response:', data);
+      
+      // API returns { data: {...}, message: "...", success: true }
+      if (data?.data) {
+        return data.data; // Return actual product object
+      }
+      return data; // Fallback
     } catch (error: any) {
       console.error('GET product by ID error:', error);
       
@@ -156,8 +161,13 @@ export class ProductsAPI {
       const response = await api.get('/v1/product-variants', { params });
       const data = response.data;
       
-      console.log('GET product variants successful:', data);
-      return data;
+      console.log('GET product variants full response:', data);
+      
+      // API returns { data: {...}, message: "...", success: true }
+      if (data?.data) {
+        return data.data; // Return { items: [...], meta: {...} }
+      }
+      return data; // Fallback
     } catch (error: any) {
       console.error('GET product variants error:', error);
       
@@ -186,8 +196,13 @@ export class ProductsAPI {
       const response = await api.get(`/v1/product-variants/${id}`);
       const data = response.data;
       
-      console.log('GET product variant by ID successful:', data);
-      return data;
+      console.log('GET product variant by ID full response:', data);
+      
+      // API returns { data: {...}, message: "...", success: true }
+      if (data?.data) {
+        return data.data; // Return actual product variant object
+      }
+      return data; // Fallback
     } catch (error: any) {
       console.error('GET product variant by ID error:', error);
       
@@ -228,8 +243,13 @@ export class ProductsAPI {
       const response = await api.get('/v1/product-variants', { params: queryParams });
       const data = response.data;
       
-      console.log('GET product variants by product ID successful:', data);
-      return data;
+      console.log('GET product variants by product ID full response:', data);
+      
+      // API returns { data: {...}, message: "...", success: true }
+      if (data?.data) {
+        return data.data; // Return { items: [...], meta: {...} }
+      }
+      return data; // Fallback
     } catch (error: any) {
       console.error('GET product variants by product ID error:', error);
       

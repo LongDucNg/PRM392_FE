@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Toast } from '../../components/Toast';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
@@ -97,6 +97,7 @@ export default function LoginScreen() {
         <View style={styles.inputContainer}>
           <TextInput
             placeholder="Email hoặc Số điện thoại"
+            placeholderTextColor="#9CA3AF"
             autoCapitalize="none"
             keyboardType="email-address"
             value={email}
@@ -115,6 +116,7 @@ export default function LoginScreen() {
         <View style={styles.inputContainer}>
           <TextInput
             placeholder="Mật khẩu"
+            placeholderTextColor="#9CA3AF"
             secureTextEntry
             value={password}
             onChangeText={setPassword}
@@ -144,23 +146,6 @@ export default function LoginScreen() {
           ) : (
             <Text style={styles.buttonText}>Đăng nhập</Text>
           )}
-        </Pressable>
-
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>hoặc</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        <Pressable
-          onPress={() => Alert.alert('Thông báo', 'Đăng nhập Google sẽ sớm hỗ trợ.')}
-          style={({ pressed }) => [
-            styles.googleButton,
-            pressed && styles.buttonPressed
-          ]}
-          disabled={loading}
-        >
-          <Text style={styles.googleButtonText}>Đăng nhập với Google</Text>
         </Pressable>
       </View>
 
@@ -250,33 +235,6 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e1e5e9',
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    color: '#666',
-  },
-  googleButton: {
-    backgroundColor: '#EA4335',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',

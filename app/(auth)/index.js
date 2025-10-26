@@ -1,49 +1,156 @@
 import { useRouter } from 'expo-router';
-import { Image, Pressable, Text, View } from 'react-native';
-import { useColorScheme } from '../../components/useColorScheme';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../constants/Colors';
 
 export default function AuthLandingScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  // Force light mode
+  const colorScheme = 'light';
+  const theme = Colors[colorScheme];
 
   return (
-    <View style={{ flex: 1, padding: 24, justifyContent: 'center', alignItems: 'center', gap: 24 }}>
-      <Image
-        source={require('../../assets/images/icon.png')}
-        style={{ width: 180, height: 180, marginBottom: 8 }}
-        resizeMode="contain"
-      />
-      <Text style={{ fontSize: 24, fontWeight: '700', textAlign: 'center' }}>ElectroStore</Text>
-      <Text style={{ fontSize: 14, color: '#666', textAlign: 'center' }}>Chào mừng bạn đến với ElectroStore</Text>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <View style={styles.container}>
+        {/* Logo Section */}
+        <View style={styles.logoSection}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../assets/images/icon.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.appName}>ElectroStore</Text>
+          <Text style={styles.welcomeText}>
+            Chào mừng bạn đến với ElectroStore
+          </Text>
+        </View>
 
-      <View style={{ width: '100%', gap: 12, marginTop: 12 }}>
-        <Pressable
-          onPress={() => router.push('/(auth)/register')}
-          style={({ pressed }) => ({
-            backgroundColor: theme.primary,
-            paddingVertical: 14,
-            borderRadius: 10,
-            opacity: pressed ? 0.8 : 1,
-          })}
-        >
-          <Text style={{ color: 'white', textAlign: 'center', fontWeight: '700' }}>Đăng ký</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(auth)/login')}
-          style={({ pressed }) => ({
-            backgroundColor: theme.muted,
-            paddingVertical: 14,
-            borderRadius: 10,
-            opacity: pressed ? 0.8 : 1,
-          })}
-        >
-          <Text style={{ color: '#111827', textAlign: 'center', fontWeight: '700' }}>Đăng nhập</Text>
-        </Pressable>
+        {/* Action Buttons */}
+        <View style={styles.buttonSection}>
+          <Pressable
+            onPress={() => router.push('/(auth)/register')}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              { backgroundColor: theme.primary },
+              pressed && styles.buttonPressed
+            ]}
+          >
+            <Text style={styles.primaryButtonText}>Đăng ký</Text>
+          </Pressable>
+          
+          <Pressable
+            onPress={() => router.push('/(auth)/login')}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              { borderColor: theme.primary },
+              pressed && styles.buttonPressed
+            ]}
+          >
+            <Text style={[styles.secondaryButtonText, { color: theme.primary }]}>
+              Đăng nhập
+            </Text>
+          </Pressable>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: 'space-between',
+  },
+  // Logo Section
+  logoSection: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  logoContainer: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  logo: {
+    width: 120,
+    height: 120,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  welcomeText: {
+    fontSize: 18,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  // Button Section
+  buttonSection: {
+    paddingBottom: 40,
+    gap: 16,
+  },
+  primaryButton: {
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  secondaryButton: {
+    paddingVertical: 18,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    backgroundColor: '#FFFFFF',
+  },
+  secondaryButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  buttonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
+});
 

@@ -14,29 +14,26 @@ export const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   const token = await SecureStore.getItemAsync('auth-token');
+  
   if (token) {
     if (!config.headers) {
       config.headers = {} as any;
     }
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
   return config;
 });
 
 api.interceptors.response.use(
   (res) => {
-    console.log('API Response:', res.status, res.config.url);
     return res;
   },
   (err) => {
-    console.error('API Error:', err.message, err.config?.url);
-    console.error('API Error Details:', {
-      status: err.response?.status,
-      statusText: err.response?.statusText,
-      data: err.response?.data,
-      url: err.config?.url,
-      method: err.config?.method
-    });
+    // Only log non-server errors
+    if (err.response?.status < 500 && err.response?.status >= 400) {
+      console.error('API Error:', err.message, err.config?.url, err.response?.data);
+    }
     return Promise.reject(err);
   }
 );

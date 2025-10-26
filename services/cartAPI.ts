@@ -1,13 +1,13 @@
 import { api } from '../lib/api';
 import {
-    AddToCartRequest,
-    Cart,
-    CartItem,
-    CreateOrderRequest,
-    Order,
-    OrdersQueryParams,
-    OrdersResponse,
-    UpdateCartItemRequest
+  AddToCartRequest,
+  Cart,
+  CartItem,
+  CreateOrderRequest,
+  Order,
+  OrdersQueryParams,
+  OrdersResponse,
+  UpdateCartItemRequest
 } from '../models';
 
 /**
@@ -52,7 +52,19 @@ export class CartAPI {
       console.log('Lấy thông tin giỏ hàng...');
       
       const response = await api.get('/v1/cart/me');
-      const cart = response.data;
+      console.log('Full cart response:', response.data);
+      
+      // API returns { data: {...}, message: "...", success: true }
+      const apiResponse = response.data;
+      let cart;
+      
+      if (apiResponse?.data) {
+        cart = apiResponse.data;
+      } else if (apiResponse?.cart) {
+        cart = apiResponse.cart;
+      } else {
+        cart = apiResponse;
+      }
       
       console.log('Lấy giỏ hàng thành công:', cart);
       return cart;
@@ -112,22 +124,81 @@ export class CartItemsAPI {
    */
   static async addToCart(data: AddToCartRequest): Promise<CartItem> {
     try {
-      console.log('Thêm sản phẩm vào giỏ hàng:', data);
+      console.log('Thêm sản phẩm vào giỏ hàng:', {
+        productId: data.productId,
+        productVariantId: data.productVariantId,
+        quantity: data.quantity
+      });
+      
+      // Log request details for debugging
+      console.log('API Request Details:', {
+        url: '/v1/cart-items/add-to-cart',
+        method: 'POST',
+        data: data,
+        timestamp: new Date().toISOString()
+      });
       
       const response = await api.post('/v1/cart-items/add-to-cart', data);
-      const cartItem = response.data;
+      const responseData = response.data;
       
-      console.log('Thêm vào giỏ hàng thành công:', cartItem);
-      return cartItem;
+      // Handle new API response structure
+      if (responseData.success && responseData.data) {
+        const cartItemData = responseData.data;
+        
+        // Convert $numberDecimal to number
+        const cartItem: CartItem = {
+          _id: cartItemData._id,
+          cartId: cartItemData.cartId,
+          productId: cartItemData.productId,
+          productVariantId: cartItemData.productVariantId,
+          quantity: cartItemData.quantity,
+          unitPrice: typeof cartItemData.unitPrice === 'object' && cartItemData.unitPrice.$numberDecimal 
+            ? parseFloat(cartItemData.unitPrice.$numberDecimal)
+            : cartItemData.unitPrice || 0,
+          totalPrice: typeof cartItemData.totalPrice === 'object' && cartItemData.totalPrice.$numberDecimal 
+            ? parseFloat(cartItemData.totalPrice.$numberDecimal)
+            : cartItemData.totalPrice || 0,
+          createdAt: cartItemData.createdAt,
+          updatedAt: cartItemData.updatedAt
+        };
+        
+        console.log('Thêm vào giỏ hàng thành công:', cartItem);
+        return cartItem;
+      } else {
+        throw new Error(responseData.message || 'Thêm vào giỏ hàng thất bại');
+      }
     } catch (error: any) {
+      // Only log non-server errors in detail
+      if (error.response?.status >= 500) {
+        // Server error - will be handled by fallback, just throw
+        throw new Error('Lỗi server. Vui lòng thử lại sau');
+      }
+      
       console.error('Lỗi thêm vào giỏ hàng:', error);
+      
+      // Enhanced error logging for non-server errors
+      console.error('Error Details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        code: error.code,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          data: error.config?.data
+        }
+      });
       
       if (error.response?.status === 400) {
         const message = error.response?.data?.message || 'Dữ liệu không hợp lệ';
         throw new Error(message);
-      } else if (error.response?.status >= 500) {
-        throw new Error('Lỗi server. Vui lòng thử lại sau');
-      } else if (error.code === 'NETWORK_ERROR') {
+      } else if (error.response?.status === 401) {
+        throw new Error('Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng');
+      } else if (error.response?.status === 404) {
+        const message = error.response?.data?.message || 'Không tìm thấy sản phẩm hoặc biến thể sản phẩm';
+        throw new Error(message);
+      } else if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
         throw new Error('Không có kết nối mạng. Vui lòng kiểm tra internet');
       }
       
@@ -191,6 +262,59 @@ export class CartItemsAPI {
       }
       
       throw new Error('Xóa sản phẩm khỏi giỏ hàng thất bại. Vui lòng thử lại');
+    }
+  }
+}
+
+/**
+ * Get Cart Items for current user
+ */
+export class CartItemsService {
+  static async getMyCartItems(): Promise<CartItem[]> {
+    try {
+      console.log('Lấy danh sách cart items...');
+      
+      const response = await api.get('/v1/cart-items/me');
+      console.log('Full cart items response:', response.data);
+      
+      // API returns { data: [...], message: "...", success: true }
+      const apiResponse = response.data;
+      let cartItems: CartItem[] = [];
+      
+      if (apiResponse?.data) {
+        cartItems = Array.isArray(apiResponse.data) ? apiResponse.data : [];
+      } else if (apiResponse?.items) {
+        cartItems = Array.isArray(apiResponse.items) ? apiResponse.items : [];
+      } else if (Array.isArray(apiResponse)) {
+        cartItems = apiResponse;
+      }
+      
+      // Convert $numberDecimal to number if needed
+      cartItems = cartItems.map((item: any) => ({
+        ...item,
+        unitPrice: typeof item.unitPrice === 'object' && item.unitPrice?.$numberDecimal
+          ? parseFloat(item.unitPrice.$numberDecimal)
+          : item.unitPrice || 0,
+        totalPrice: typeof item.totalPrice === 'object' && item.totalPrice?.$numberDecimal
+          ? parseFloat(item.totalPrice.$numberDecimal)
+          : item.totalPrice || 0
+      }));
+      
+      console.log('Lấy cart items thành công:', cartItems.length, 'items');
+      return cartItems;
+    } catch (error: any) {
+      console.error('Lỗi lấy cart items:', error);
+      
+      if (error.response?.status === 404) {
+        console.log('Không có cart items, trả về mảng rỗng');
+        return [];
+      } else if (error.response?.status >= 500) {
+        throw new Error('Lỗi server. Vui lòng thử lại sau');
+      } else if (error.code === 'NETWORK_ERROR') {
+        throw new Error('Không có kết nối mạng. Vui lòng kiểm tra internet');
+      }
+      
+      throw new Error('Lấy danh sách giỏ hàng thất bại. Vui lòng thử lại');
     }
   }
 }

@@ -20,12 +20,18 @@ export class AuthService {
       
       // Store token securely
       await SecureStore.setItemAsync('auth-token', data.token);
-      console.log('Token stored successfully');
+      
+      // Log full token for Postman testing
+      console.log('═══════════════════════════════════════');
+      console.log('🔑 LOGIN SUCCESS - TOKEN FOR POSTMAN:');
+      console.log('═══════════════════════════════════════');
+      console.log('Bearer ' + data.token);
+      console.log('═══════════════════════════════════════');
       
       return data;
     } catch (error) {
-      console.error('AuthService login error:', error);
-      throw error; // Re-throw the error from LoginAPI
+      console.error('❌ Login failed:', error);
+      throw error;
     }
   }
 
@@ -41,12 +47,18 @@ export class AuthService {
       
       // Store token securely
       await SecureStore.setItemAsync('auth-token', data.token);
-      console.log('Token stored successfully');
+      
+      // Log full token for Postman testing
+      console.log('═══════════════════════════════════════');
+      console.log('🔑 REGISTER SUCCESS - TOKEN FOR POSTMAN:');
+      console.log('═══════════════════════════════════════');
+      console.log('Bearer ' + data.token);
+      console.log('═══════════════════════════════════════');
       
       return data;
     } catch (error) {
-      console.error('AuthService register error:', error);
-      throw error; // Re-throw the error from RegisterAPI
+      console.error('❌ Register failed:', error);
+      throw error;
     }
   }
 

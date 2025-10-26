@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, FlatList, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Toast } from '../../components/Toast';
-import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
+import { ProductVariantsAPI } from '../../services/productVariantsAPI';
 import { useHomeViewModel } from '../../viewmodels/useHomeViewModel';
 
 // Category icons mapping với Ionicons hiện đại
@@ -36,8 +36,9 @@ const getCategoryIcon = (categoryName) => {
 };
 
 export default function HomeScreen() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? 'light'];
+  // Force light mode
+  const colorScheme = 'light';
+  const theme = Colors[colorScheme];
   const router = useRouter();
   const { state, actions } = useHomeViewModel();
   const { categories, featuredProducts, loading, error } = state;
@@ -45,6 +46,40 @@ export default function HomeScreen() {
   
   // State for segmented control
   const [selectedSegment, setSelectedSegment] = useState(0);
+  const slideAnimation = useRef(new Animated.Value(0)).current;
+  
+  // State for product prices
+  const [productPrices, setProductPrices] = useState({});
+
+  // Load product prices from variants
+  useEffect(() => {
+    const loadPrices = async () => {
+      try {
+        const prices = {};
+        for (const product of featuredProducts) {
+          try {
+            const variants = await ProductVariantsAPI.getVariantsByProductId(product._id);
+            if (variants && variants.length > 0) {
+              // Lấy variant có giá thấp nhất
+              const minPriceVariant = variants.reduce((min, variant) => 
+                variant.price < min.price ? variant : min
+              );
+              prices[product._id] = minPriceVariant.price;
+            }
+          } catch (error) {
+            console.error(`Error loading price for product ${product._id}:`, error);
+          }
+        }
+        setProductPrices(prices);
+      } catch (error) {
+        console.error('Error loading product prices:', error);
+      }
+    };
+    
+    if (featuredProducts.length > 0) {
+      loadPrices();
+    }
+  }, [featuredProducts]);
 
   // Load data on mount
   useEffect(() => {
@@ -61,9 +96,19 @@ export default function HomeScreen() {
     clearError();
   };
 
+  // Handle segment change with animation
+  const handleSegmentChange = (segmentIndex) => {
+    setSelectedSegment(segmentIndex);
+    Animated.timing(slideAnimation, {
+      toValue: segmentIndex,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
   const renderCategory = ({ item }) => (
     <TouchableOpacity
-      style={[styles.categoryCard, { backgroundColor: 'white' }]}
+      style={styles.categoryCard}
       onPress={() => {
         // Navigate to products with filter
         console.log('Navigate to category:', item.name);
@@ -79,76 +124,104 @@ export default function HomeScreen() {
 
   const renderProduct = ({ item }) => (
     <TouchableOpacity
-      style={[styles.productCard, { backgroundColor: theme.background }]}
+      style={styles.productCard}
       onPress={() => {
         // Navigate to product detail
-        console.log('Navigate to product:', item.name);
-        router.push('/(tabs)/product');
+        router.push({
+          pathname: '/(tabs)/product-detail',
+          params: { productId: item._id }
+        });
       }}
     >
-      <Image 
-        source={{ 
-          uri: `https://via.placeholder.com/200x200/007AFF/FFFFFF?text=${encodeURIComponent(item.name)}` 
-        }} 
-        style={styles.productImage} 
-      />
+      {/* Icon container thay vì ảnh */}
+      <View style={styles.productIconContainer}>
+        <View style={[styles.iconWrapper, { backgroundColor: theme.primary + '15' }]}>
+          <Ionicons name="cube-outline" size={40} color={theme.primary} />
+        </View>
+      </View>
+      
       <View style={styles.productInfo}>
-        <Text style={[styles.productName, { color: theme.text }]} numberOfLines={2}>
+        <Text style={styles.productName} numberOfLines={2}>
           {item.name}
         </Text>
-        <Text style={[styles.productCode, { color: theme.tabIconDefault }]}>
+        <Text style={styles.productCode}>
           Mã: {item.code}
         </Text>
         <Text style={[styles.productCategory, { color: theme.primary }]}>
           {item.categoryName}
         </Text>
+        {/* Hiển thị giá từ product variants */}
+        {productPrices[item._id] && (
+          <Text style={[styles.productPrice, { color: theme.primary }]}>
+            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(productPrices[item._id])}
+          </Text>
+        )}
         <TouchableOpacity 
           style={styles.addToCartButton}
-          onPress={() => router.push('/(tabs)/product')}
+          onPress={(e) => {
+            e.stopPropagation(); // Prevent parent TouchableOpacity from triggering
+            router.push({
+              pathname: '/(tabs)/product-detail',
+              params: { productId: item._id }
+            });
+          }}
         >
-          <Ionicons name="add" size={16} color="white" />
+          <Ionicons name="eye-outline" size={16} color="white" />
           <Text style={styles.addToCartText}>Xem chi tiết</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 
-  // Segmented Control Component
-  const SegmentedControl = () => (
-    <View style={[styles.segmentedControl, { backgroundColor: theme.muted }]}>
-      <TouchableOpacity
-        style={[
-          styles.segmentButton,
-          selectedSegment === 0 && { backgroundColor: theme.primary }
-        ]}
-        onPress={() => setSelectedSegment(0)}
-      >
-        <Text style={[
-          styles.segmentText,
-          { color: selectedSegment === 0 ? 'white' : theme.text }
-        ]}>
-          Sản phẩm nổi bật
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[
-          styles.segmentButton,
-          selectedSegment === 1 && { backgroundColor: theme.primary }
-        ]}
-        onPress={() => setSelectedSegment(1)}
-      >
-        <Text style={[
-          styles.segmentText,
-          { color: selectedSegment === 1 ? 'white' : theme.text }
-        ]}>
-          Danh mục
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
+  // Segmented Control Component with smooth animation
+  const SegmentedControl = () => {
+    const segmentWidth = slideAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0%', '100%'],
+    });
+
+    return (
+      <View style={[styles.segmentedControl, { backgroundColor: theme.muted }]}>
+        <Animated.View
+          style={[
+            styles.segmentIndicator,
+            {
+              backgroundColor: theme.primary,
+              left: slideAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: ['2%', '52%'],
+              }),
+            }
+          ]}
+        />
+        <TouchableOpacity
+          style={styles.segmentButton}
+          onPress={() => handleSegmentChange(0)}
+        >
+          <Text style={[
+            styles.segmentText,
+            { color: selectedSegment === 0 ? 'white' : theme.text }
+          ]}>
+            Sản phẩm nổi bật
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.segmentButton}
+          onPress={() => handleSegmentChange(1)}
+        >
+          <Text style={[
+            styles.segmentText,
+            { color: selectedSegment === 1 ? 'white' : theme.text }
+          ]}>
+            Danh mục
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Toast
         visible={!!error}
         message={error || ''}
@@ -156,7 +229,7 @@ export default function HomeScreen() {
         onHide={handleErrorDismiss}
       />
       <ScrollView 
-        style={[styles.container, { backgroundColor: theme.background }]} 
+        style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -232,9 +305,6 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>Danh mục sản phẩm</Text>
-            <View style={styles.sectionSubtitle}>
-              <Text style={[styles.sectionSubtitleText, { color: theme.tabIconDefault }]}>Khám phá sản phẩm</Text>
-            </View>
           </View>
           {loading && categories.length === 0 ? (
             <View style={styles.loadingContainer}>
@@ -262,11 +332,13 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 8,
+    backgroundColor: '#FFFFFF',
   },
   // Header styles
   header: {
@@ -275,6 +347,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     marginBottom: 8,
+    backgroundColor: '#FFFFFF',
   },
   headerLeft: {
     flex: 1,
@@ -396,26 +469,39 @@ const styles = StyleSheet.create({
     margin: 6,
     borderRadius: 16,
     padding: 12,
+    minHeight: 260, // Chiều cao cố định để các card đồng đều
+    backgroundColor: '#FFFFFF',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
-  productImage: {
-    width: '100%',
-    height: 120,
-    borderRadius: 12,
+  productIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 80,
     marginBottom: 12,
+  },
+  iconWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   productInfo: {
     flex: 1,
+    justifyContent: 'space-between', // Để nút ở cuối card
   },
   productName: {
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 6,
     lineHeight: 18,
+    color: '#1F2937',
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -469,12 +555,17 @@ const styles = StyleSheet.create({
   productCode: {
     fontSize: 12,
     marginBottom: 4,
-    color: '#666',
+    color: '#6B7280',
   },
   productCategory: {
     fontSize: 12,
     fontWeight: '500',
     marginBottom: 8,
+  },
+  productPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 12,
   },
   // Segmented Control styles
   segmentedControl: {
@@ -482,6 +573,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
     marginBottom: 16,
+    backgroundColor: '#F3F4F6',
+    position: 'relative',
+  },
+  segmentIndicator: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    width: '48%',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   segmentButton: {
     flex: 1,
@@ -490,6 +595,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   segmentText: {
     fontSize: 14,
