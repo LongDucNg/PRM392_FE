@@ -264,6 +264,36 @@ export class CartItemsAPI {
       throw new Error('Xóa sản phẩm khỏi giỏ hàng thất bại. Vui lòng thử lại');
     }
   }
+
+  /**
+   * Xóa toàn bộ sản phẩm khỏi giỏ hàng
+   * @param cartItemIds - Danh sách ID của các item cần xóa
+   * @returns Promise<void>
+   */
+  static async clearAllCartItems(cartItemIds: string[]): Promise<void> {
+    try {
+      console.log('Xóa toàn bộ sản phẩm khỏi giỏ hàng:', cartItemIds.length, 'items');
+      
+      // Xóa từng item
+      const deletePromises = cartItemIds.map(id => 
+        api.delete(`/v1/cart-items/delete-item/${id}`)
+      );
+      
+      await Promise.all(deletePromises);
+      
+      console.log('Xóa toàn bộ sản phẩm khỏi giỏ hàng thành công');
+    } catch (error: any) {
+      console.error('Lỗi xóa toàn bộ sản phẩm khỏi giỏ hàng:', error);
+      
+      if (error.response?.status >= 500) {
+        throw new Error('Lỗi server. Vui lòng thử lại sau');
+      } else if (error.code === 'NETWORK_ERROR') {
+        throw new Error('Không có kết nối mạng. Vui lòng kiểm tra internet');
+      }
+      
+      throw new Error('Xóa toàn bộ sản phẩm khỏi giỏ hàng thất bại. Vui lòng thử lại');
+    }
+  }
 }
 
 /**
@@ -333,10 +363,12 @@ export class OrdersAPI {
       console.log('Tạo đơn hàng mới:', data);
       
       const response = await api.post('/v1/orders', data);
-      const order = response.data;
       
-      console.log('Tạo đơn hàng thành công:', order);
-      return order;
+      // Extract order from response data wrapper
+      const orderData = response.data?.data || response.data;
+      
+      console.log('Tạo đơn hàng thành công:', orderData);
+      return orderData;
     } catch (error: any) {
       console.error('Lỗi tạo đơn hàng:', error);
       
@@ -363,10 +395,37 @@ export class OrdersAPI {
       console.log('Lấy danh sách đơn hàng:', params);
       
       const response = await api.get('/v1/orders', { params });
-      const orders = response.data;
+      console.log('Full response từ API:', JSON.stringify(response.data, null, 2));
       
-      console.log('Lấy danh sách đơn hàng thành công:', orders);
-      return orders;
+      // Response structure from logs: 
+      // { data: { items: [...], meta: {...} }, message, statusCode, success }
+      // So response.data is { data: {...}, message, ... }
+      // And response.data.data is { items: [...], meta: {...} }
+      const responseData = response.data;
+      console.log('Response.data:', responseData);
+      
+      let ordersResponse;
+      if (responseData?.data && responseData.data.items) {
+        // Double nesting: response.data.data has items
+        ordersResponse = responseData.data;
+        console.log('Using response.data.data structure');
+      } else if (responseData?.items) {
+        // Single nesting: response.data has items
+        ordersResponse = responseData;
+        console.log('Using response.data structure');
+      } else if (responseData) {
+        // Fallback
+        ordersResponse = responseData;
+        console.log('Using response.data as fallback');
+      } else {
+        ordersResponse = { items: [], meta: { total: 0, page: 0, limit: 0, totalPages: 0 } };
+        console.log('Using empty response');
+      }
+      
+      console.log('Final ordersResponse:', ordersResponse);
+      console.log('Items count:', ordersResponse.items?.length || 0);
+      
+      return ordersResponse;
     } catch (error: any) {
       console.error('Lỗi lấy danh sách đơn hàng:', error);
       
@@ -390,10 +449,12 @@ export class OrdersAPI {
       console.log('Lấy thông tin đơn hàng theo ID:', id);
       
       const response = await api.get(`/v1/orders/${id}`);
-      const order = response.data;
       
-      console.log('Lấy đơn hàng theo ID thành công:', order);
-      return order;
+      // Extract order from response data wrapper
+      const orderData = response.data?.data || response.data;
+      
+      console.log('Lấy đơn hàng theo ID thành công:', orderData);
+      return orderData;
     } catch (error: any) {
       console.error('Lỗi lấy đơn hàng theo ID:', error);
       

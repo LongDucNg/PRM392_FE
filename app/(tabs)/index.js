@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, FlatList, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, FlatList, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Toast } from '../../components/Toast';
 import Colors from '../../constants/Colors';
 import { ProductVariantsAPI } from '../../services/productVariantsAPI';
+import { useCartViewModel } from '../../viewmodels/useCartViewModel';
 import { useHomeViewModel } from '../../viewmodels/useHomeViewModel';
 
 // Category icons mapping với Ionicons hiện đại
@@ -43,6 +44,10 @@ export default function HomeScreen() {
   const { state, actions } = useHomeViewModel();
   const { categories, featuredProducts, loading, error } = state;
   const { loadData, refreshData, clearError } = actions;
+  
+  // Get cart functionality
+  const { cartItems, addToCart } = useCartViewModel();
+  const cartItemsCount = cartItems?.length || 0;
   
   // State for segmented control
   const [selectedSegment, setSelectedSegment] = useState(0);
@@ -106,6 +111,35 @@ export default function HomeScreen() {
     }).start();
   };
 
+  // Handle add to cart
+  const handleAddToCart = async (product) => {
+    try {
+      // Get the first variant of the product
+      let productVariantId = product._id; // Fallback to product ID
+      
+      try {
+        const variants = await ProductVariantsAPI.getVariantsByProductId(product._id);
+        if (variants && variants.length > 0) {
+          productVariantId = variants[0]._id;
+        }
+      } catch (variantError) {
+        console.warn('Could not load variants, using product ID as variant ID:', variantError);
+      }
+
+      await addToCart({
+        productId: product._id,
+        productVariantId: productVariantId,
+        quantity: 1
+      });
+      
+      // Show success message
+      Alert.alert('Thành công', 'Đã thêm sản phẩm vào giỏ hàng');
+    } catch (err) {
+      console.error('Add to cart error:', err);
+      Alert.alert('Lỗi', err.message || 'Không thể thêm sản phẩm vào giỏ hàng');
+    }
+  };
+
   const renderCategory = ({ item }) => (
     <TouchableOpacity
       style={styles.categoryCard}
@@ -133,6 +167,18 @@ export default function HomeScreen() {
         });
       }}
     >
+      {/* Cart icon in top right corner */}
+      <TouchableOpacity
+        style={styles.cartIconContainer}
+        onPress={(e) => {
+          e.stopPropagation(); // Prevent parent TouchableOpacity from triggering
+          // Add to cart functionality
+          handleAddToCart(item);
+        }}
+      >
+        <Ionicons name="cart-outline" size={20} color={theme.primary} />
+      </TouchableOpacity>
+
       {/* Icon container thay vì ảnh */}
       <View style={styles.productIconContainer}>
         <View style={[styles.iconWrapper, { backgroundColor: theme.primary + '15' }]}>
@@ -256,9 +302,11 @@ export default function HomeScreen() {
             onPress={() => router.push('/(tabs)/cart')}
           >
             <Ionicons name="cart-outline" size={24} color={theme.text} />
-            <View style={styles.cartBadge}>
-              <Text style={styles.badgeText}>3</Text>
-            </View>
+            {cartItemsCount > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.badgeText}>{cartItemsCount > 99 ? '99+' : cartItemsCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.avatarContainer}
@@ -478,6 +526,24 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: '#F3F4F6',
+    position: 'relative', // For absolute positioning of cart icon
+  },
+  cartIconContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    zIndex: 1,
   },
   productIconContainer: {
     alignItems: 'center',

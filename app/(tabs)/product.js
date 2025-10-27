@@ -15,7 +15,8 @@ export default function ProductsScreen() {
   const router = useRouter();
   
   // Cart functionality
-  const { addToCart, isAddingToCart } = useCartViewModel();
+  const { addToCart, isAddingToCart, cartItems } = useCartViewModel();
+  const cartItemsCount = cartItems?.length || 0;
   
   // State management
   const [products, setProducts] = useState([]);
@@ -180,6 +181,19 @@ export default function ProductsScreen() {
   // Render product item
   const renderProduct = ({ item }) => (
     <View style={[styles.productCard, { backgroundColor: theme.background, borderColor: theme.muted }]}>
+      {/* Cart icon in top right corner */}
+      <TouchableOpacity
+        style={styles.cartIconContainer}
+        onPress={() => handleAddToCart(item)}
+        disabled={isAddingToCart || !item.isActive}
+      >
+        {isAddingToCart ? (
+          <ActivityIndicator size="small" color={theme.primary} />
+        ) : (
+          <Ionicons name="cart-outline" size={20} color={theme.primary} />
+        )}
+      </TouchableOpacity>
+
       <TouchableOpacity
         onPress={() => {
           // Navigate to product detail
@@ -276,9 +290,11 @@ export default function ProductsScreen() {
             onPress={() => router.push('/(tabs)/cart')}
           >
             <Ionicons name="cart-outline" size={24} color={theme.text} />
-            <View style={styles.cartBadge}>
-              <Text style={styles.badgeText}>3</Text>
-            </View>
+            {cartItemsCount > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.badgeText}>{cartItemsCount > 99 ? '99+' : cartItemsCount}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
         <View style={styles.searchContainer}>
@@ -399,6 +415,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 5,
+    position: 'relative', // For absolute positioning of cart icon
+  },
+  cartIconContainer: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    zIndex: 1,
   },
   productContent: {
     flex: 1,

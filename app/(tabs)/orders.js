@@ -2,16 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../constants/Colors';
@@ -39,7 +39,7 @@ export default function OrdersScreen() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [fetchOrders]);
 
   useEffect(() => {
     if (error) {
@@ -138,8 +138,8 @@ export default function OrdersScreen() {
   };
 
   const renderOrderItem = ({ item: order }) => {
-    const statusInfo = getStatusInfo(order.status);
-    const paymentInfo = getPaymentStatusInfo(order.paymentStatus);
+    const statusInfo = getStatusInfo(order.status || 'pending');
+    const paymentInfo = getPaymentStatusInfo(order.paymentStatus || 'pending');
     
     return (
       <TouchableOpacity 
@@ -154,11 +154,11 @@ export default function OrdersScreen() {
           <View style={styles.orderIdContainer}>
             <Ionicons name="receipt-outline" size={20} color={theme.primary} />
             <Text style={[styles.orderId, { color: theme.text }]}>
-              #{order._id.slice(-8).toUpperCase()}
+              #{order._id ? order._id.slice(-8).toUpperCase() : 'N/A'}
             </Text>
           </View>
           <Text style={[styles.orderDate, { color: theme.tabIconDefault }]}>
-            {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+            {order.createdAt ? new Date(order.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
           </Text>
         </View>
 
@@ -184,13 +184,13 @@ export default function OrdersScreen() {
             <View style={styles.infoItem}>
               <Ionicons name="bag-outline" size={16} color={theme.tabIconDefault} />
               <Text style={[styles.infoText, { color: theme.tabIconDefault }]}>
-                {order.items?.length || 0} sản phẩm
+                {order.items && Array.isArray(order.items) ? order.items.length : 0} sản phẩm
               </Text>
             </View>
             <View style={styles.infoItem}>
               <Ionicons name="cash-outline" size={16} color={theme.primary} />
               <Text style={[styles.totalAmount, { color: theme.primary }]}>
-                {order.totalAmount.toLocaleString('vi-VN')} VNĐ
+                {order.totalAmount ? order.totalAmount.toLocaleString('vi-VN') : '0'} VNĐ
               </Text>
             </View>
           </View>
@@ -218,8 +218,8 @@ export default function OrdersScreen() {
   const renderOrderDetailModal = () => {
     if (!selectedOrder) return null;
     
-    const statusInfo = getStatusInfo(selectedOrder.status);
-    const paymentInfo = getPaymentStatusInfo(selectedOrder.paymentStatus);
+    const statusInfo = getStatusInfo(selectedOrder.status || 'pending');
+    const paymentInfo = getPaymentStatusInfo(selectedOrder.paymentStatus || 'pending');
     
     return (
       <Modal
@@ -247,11 +247,11 @@ export default function OrdersScreen() {
               <View style={styles.cardHeader}>
                 <Ionicons name="receipt-outline" size={24} color={theme.primary} />
                 <Text style={[styles.cardTitle, { color: theme.text }]}>
-                  #{selectedOrder._id.slice(-8).toUpperCase()}
+                  #{selectedOrder._id ? selectedOrder._id.slice(-8).toUpperCase() : 'N/A'}
                 </Text>
               </View>
               <Text style={[styles.orderDate, { color: theme.tabIconDefault }]}>
-                {new Date(selectedOrder.createdAt).toLocaleString('vi-VN')}
+                {selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleString('vi-VN') : 'N/A'}
               </Text>
             </View>
 
@@ -288,13 +288,13 @@ export default function OrdersScreen() {
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: theme.tabIconDefault }]}>Số sản phẩm:</Text>
                 <Text style={[styles.summaryValue, { color: theme.text }]}>
-                  {selectedOrder.items?.length || 0} sản phẩm
+                  {selectedOrder.items && Array.isArray(selectedOrder.items) ? selectedOrder.items.length : 0} sản phẩm
                 </Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: theme.tabIconDefault }]}>Tổng tiền:</Text>
                 <Text style={[styles.summaryValue, { color: theme.primary }]}>
-                  {selectedOrder.totalAmount.toLocaleString('vi-VN')} VNĐ
+                  {selectedOrder.totalAmount ? selectedOrder.totalAmount.toLocaleString('vi-VN') : '0'} VNĐ
                 </Text>
               </View>
             </View>
@@ -318,23 +318,23 @@ export default function OrdersScreen() {
             )}
 
             {/* Products List */}
-            {selectedOrder.items && selectedOrder.items.length > 0 && (
+            {selectedOrder.items && Array.isArray(selectedOrder.items) && selectedOrder.items.length > 0 && (
               <View style={[styles.productsCard, { backgroundColor: theme.background, borderColor: theme.muted }]}>
                 <Text style={[styles.productsTitle, { color: theme.text }]}>
                   Sản phẩm ({selectedOrder.items.length})
                 </Text>
                 {selectedOrder.items.map((item, index) => (
-                  <View key={index} style={[styles.productItem, { borderColor: theme.muted }]}>
+                  <View key={item._id || `item-${index}`} style={[styles.productItem, { borderColor: theme.muted }]}>
                     <View style={styles.productInfo}>
                       <Text style={[styles.productName, { color: theme.text }]}>
-                        Sản phẩm #{item.productId.slice(-6)}
+                        Sản phẩm #{item.productId ? item.productId.slice(-6) : 'N/A'}
                       </Text>
                       <Text style={[styles.productDetails, { color: theme.tabIconDefault }]}>
-                        Số lượng: {item.quantity} • {item.basePrice.toLocaleString('vi-VN')} VNĐ
+                        Số lượng: {item.quantity || 0} • {item.basePrice ? item.basePrice.toLocaleString('vi-VN') : '0'} VNĐ
                       </Text>
                     </View>
                     <Text style={[styles.productTotal, { color: theme.primary }]}>
-                      {item.totalPrice.toLocaleString('vi-VN')} VNĐ
+                      {item.totalPrice ? item.totalPrice.toLocaleString('vi-VN') : '0'} VNĐ
                     </Text>
                   </View>
                 ))}

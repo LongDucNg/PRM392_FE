@@ -13,10 +13,11 @@ export default function ProductDetailScreen() {
   const colorScheme = 'light';
   const theme = Colors[colorScheme];
   const router = useRouter();
-  const { productId } = useLocalSearchParams();
+  const { productId, from } = useLocalSearchParams();
   
   // Cart functionality
-  const { addToCart, isAddingToCart } = useCartViewModel();
+  const { addToCart, isAddingToCart, cartItems } = useCartViewModel();
+  const cartItemsCount = cartItems?.length || 0;
   
   // State management
   const [product, setProduct] = useState(null);
@@ -167,7 +168,14 @@ export default function ProductDetailScreen() {
           <Text style={[styles.errorTitle, { color: theme.text }]}>Không tìm thấy sản phẩm</Text>
           <TouchableOpacity 
             style={[styles.backButton, { backgroundColor: theme.primary }]}
-            onPress={() => router.back()}
+            onPress={() => {
+              // If navigating from cart, go back to cart
+              if (from === 'cart') {
+                router.push('/(tabs)/cart');
+              } else {
+                router.back();
+              }
+            }}
           >
             <Text style={styles.backButtonText}>Quay lại</Text>
           </TouchableOpacity>
@@ -182,7 +190,14 @@ export default function ProductDetailScreen() {
       <View style={[styles.header, { borderBottomColor: theme.muted }]}>
         <TouchableOpacity 
           style={styles.headerButton}
-          onPress={() => router.back()}
+          onPress={() => {
+            // If navigating from cart, go back to cart
+            if (from === 'cart') {
+              router.push('/(tabs)/cart');
+            } else {
+              router.back();
+            }
+          }}
         >
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
@@ -192,6 +207,11 @@ export default function ProductDetailScreen() {
           onPress={() => router.push('/(tabs)/cart')}
         >
           <Ionicons name="cart-outline" size={24} color={theme.text} />
+          {cartItemsCount > 0 && (
+            <View style={styles.cartBadge}>
+              <Text style={styles.badgeText}>{cartItemsCount > 99 ? '99+' : cartItemsCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -320,9 +340,26 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     padding: 8,
+    position: 'relative',
   },
   headerTitle: {
     fontSize: 18,
+    fontWeight: '600',
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
     fontWeight: '600',
   },
   // Loading styles

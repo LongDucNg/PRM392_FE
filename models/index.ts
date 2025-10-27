@@ -63,6 +63,9 @@ export type Cart = {
   _id: string;
   userId: string;
   items?: CartItem[]; // Optional items array
+  quantity?: number; // Total quantity of items in cart
+  totalPrice?: number; // Total price of all items
+  isActive?: boolean; // Whether cart is active
   createdAt: string;
   updatedAt: string;
 };
@@ -73,8 +76,9 @@ export type CartItem = {
   productId: string;
   productVariantId: string;
   quantity: number;
-  unitPrice: number;
-  totalPrice: number;
+  basePrice?: number; // Price from API (before conversion to unitPrice)
+  unitPrice: number; // Calculated price per unit
+  totalPrice: number; // Total price for this item
   createdAt: string;
   updatedAt: string;
   // Optional populated fields
@@ -102,7 +106,7 @@ export type UpdateCartItemRequest = {
 // Order interfaces
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
 export type PaymentStatus = 'pending' | 'paid' | 'failed';
-export type PaymentMethod = 'cash_on_delivery' | 'credit_card' | 'bank_transfer';
+export type PaymentMethod = 'cash_on_delivery' | 'credit_card' | 'bank_transfer' | 'qr_code';
 
 export type OrderItem = {
   productId: string;
@@ -134,6 +138,7 @@ export type CreateOrderRequest = {
   shippingAddress: string;
   paymentMethod: PaymentMethod;
   note?: string;
+  selectedItemIds?: string[]; // IDs của các cart items được chọn để đặt hàng
 };
 
 export type OrdersQueryParams = {

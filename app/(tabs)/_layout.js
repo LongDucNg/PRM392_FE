@@ -74,6 +74,13 @@ export default function TabLayout() {
           headerShown: false 
         }} 
       />
+      <Tabs.Screen 
+        name="checkout" 
+        options={{ 
+          href: null, // Ẩn khỏi tab bar
+          headerShown: false 
+        }} 
+      />
     </Tabs>
   );
 }

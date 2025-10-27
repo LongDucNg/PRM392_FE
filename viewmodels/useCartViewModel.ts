@@ -84,12 +84,72 @@ export const useCartViewModel = () => {
       console.log('Cart data received:', cartData);
       setCart(cartData);
       
-      // Fetch cart items separately
-      const cartItemsData = await CartItemsService.getMyCartItems();
-      console.log('Cart items received:', cartItemsData);
-      setCartItems(cartItemsData);
+      // Get cart items from cart data instead of separate API call
+      // API returns { data: { items: [...], ... } } or { items: [...] } or items directly
+      let cartItemsData: CartItem[] = [];
       
-      console.log('Lấy giỏ hàng thành công:', cartItemsData.length, 'items');
+      // Cast cartData to any to handle different API response formats
+      const anyCartData: any = cartData;
+      
+      if (anyCartData?.items && Array.isArray(anyCartData.items)) {
+        // Items are in cart.items
+        cartItemsData = anyCartData.items;
+      } else if (anyCartData?.data?.items && Array.isArray(anyCartData.data.items)) {
+        // Items are in cart.data.items
+        cartItemsData = anyCartData.data.items;
+      } else {
+        // Try to fetch from separate endpoint as fallback
+        try {
+          cartItemsData = await CartItemsService.getMyCartItems();
+          console.log('Cart items from separate API:', cartItemsData);
+        } catch (fallbackError: any) {
+          console.warn('Separate cart items API failed, using cart items:', fallbackError);
+          // Return empty array if both fail
+          cartItemsData = [];
+        }
+      }
+      
+      // Convert $numberDecimal to number if needed and handle API response format
+      cartItemsData = cartItemsData.map((item: any) => {
+        // API returns basePrice instead of unitPrice
+        const unitPrice = typeof item.unitPrice === 'object' && item.unitPrice?.$numberDecimal
+          ? parseFloat(item.unitPrice.$numberDecimal)
+          : item.unitPrice || item.basePrice || 0;
+        
+        const totalPrice = typeof item.totalPrice === 'object' && item.totalPrice?.$numberDecimal
+          ? parseFloat(item.totalPrice.$numberDecimal)
+          : item.totalPrice || (unitPrice * (item.quantity || 1));
+        
+        return {
+          ...item,
+          unitPrice: unitPrice,
+          totalPrice: totalPrice
+        };
+      });
+      
+      // Group items by productId and productVariantId to merge duplicates
+      const groupedItems = cartItemsData.reduce((acc: any[], item: any) => {
+        const existingItem = acc.find(existing => 
+          existing.productId === item.productId && 
+          existing.productVariantId === item.productVariantId
+        );
+        
+        if (existingItem) {
+          // Merge quantities and update total price
+          existingItem.quantity += item.quantity;
+          existingItem.totalPrice = existingItem.unitPrice * existingItem.quantity;
+        } else {
+          // Add new item
+          acc.push(item);
+        }
+        
+        return acc;
+      }, []);
+      
+      console.log('Cart items after processing and grouping:', groupedItems);
+      setCartItems(groupedItems);
+      
+      console.log('Lấy giỏ hàng thành công:', groupedItems.length, 'items');
     } catch (err: any) {
       console.error('Lỗi lấy giỏ hàng:', err);
       setError(err.message || 'Không thể lấy thông tin giỏ hàng');
@@ -174,17 +234,31 @@ export const useCartViewModel = () => {
   /**
    * Cập nhật số lượng sản phẩm trong giỏ hàng
    */
-  const updateCartItemQuantity = useCallback(async (data: UpdateCartItemRequest) => {
+  const updateCartItemQuantity = useCallback(async (itemId: string, newQuantity: number) => {
     try {
       setUpdatingCart(true);
       clearError();
+      
+      // Find the cart item to get productId and productVariantId
+      const cartItem = cartItems.find(item => item._id === itemId);
+      
+      if (!cartItem) {
+        throw new Error('Không tìm thấy sản phẩm trong giỏ hàng');
+      }
+      
+      const data: UpdateCartItemRequest = {
+        cartItemId: itemId,
+        productId: cartItem.productId,
+        productVariantId: cartItem.productVariantId,
+        quantity: newQuantity
+      };
       
       console.log('Cập nhật sản phẩm trong giỏ hàng:', data);
       const updatedItem = await CartItemsAPI.updateCartItem(data);
       
       // Cập nhật state
-      updateCartItem(data.cartItemId, {
-        quantity: data.quantity
+      updateCartItem(itemId, {
+        quantity: newQuantity
       });
       
       console.log('Cập nhật giỏ hàng thành công:', updatedItem);
@@ -196,7 +270,7 @@ export const useCartViewModel = () => {
     } finally {
       setUpdatingCart(false);
     }
-  }, [setUpdatingCart, updateCartItem, setError, clearError]);
+  }, [setUpdatingCart, updateCartItem, setError, clearError, cartItems]);
 
   /**
    * Xóa sản phẩm khỏi giỏ hàng
@@ -236,8 +310,9 @@ export const useCartViewModel = () => {
       // Thêm đơn hàng vào state
       addOrder(order);
       
-      // Xóa giỏ hàng sau khi tạo đơn hàng thành công
-      clearCart();
+      // Không xóa giỏ hàng vì user có thể muốn mua thêm
+      // Backend sẽ quản lý việc giảm số lượng sản phẩm trong giỏ hàng
+      // clearCart(); // Comment out để giữ lại giỏ hàng
       
       console.log('Tạo đơn hàng thành công:', order);
       return order;
@@ -248,7 +323,7 @@ export const useCartViewModel = () => {
     } finally {
       setCreatingOrder(false);
     }
-  }, [setCreatingOrder, addOrder, clearCart, setError, clearError]);
+  }, [setCreatingOrder, addOrder, setError, clearError]);
 
   /**
    * Lấy danh sách đơn hàng
@@ -261,10 +336,16 @@ export const useCartViewModel = () => {
       console.log('Lấy danh sách đơn hàng:', params);
       const ordersData = await OrdersAPI.getOrders(params);
       
-      // Cập nhật state
-      setOrders(ordersData.items || []);
+      console.log('OrdersData structure:', ordersData);
+      console.log('OrdersData.items:', ordersData.items);
+      console.log('OrdersData.meta:', ordersData.meta);
       
-      console.log('Lấy danh sách đơn hàng thành công:', ordersData);
+      // Cập nhật state
+      const orderItems = ordersData.items || [];
+      console.log('Setting orders with items:', orderItems);
+      setOrders(orderItems);
+      
+      console.log('Lấy danh sách đơn hàng thành công:', orderItems.length, 'orders');
       return ordersData;
     } catch (err: any) {
       console.error('Lỗi lấy danh sách đơn hàng:', err);
@@ -318,6 +399,39 @@ export const useCartViewModel = () => {
     clearError();
   }, [clearError]);
 
+  /**
+   * Xóa toàn bộ giỏ hàng (cả trên server và local)
+   */
+  const clearAllCart = useCallback(async () => {
+    try {
+      setLoading(true);
+      clearError();
+      
+      // Xóa tất cả items trên server
+      if (cartItems.length > 0) {
+        const itemIds = cartItems.map(item => item._id);
+        await CartItemsAPI.clearAllCartItems(itemIds);
+      }
+      
+      // Xóa local storage nếu có
+      try {
+        await AsyncStorage.removeItem('local_cart_items');
+      } catch (storageError) {
+        console.warn('Lỗi xóa local storage:', storageError);
+      }
+      
+      // Xóa state
+      clearCart();
+      
+      console.log('Xóa toàn bộ giỏ hàng thành công');
+    } catch (err: any) {
+      console.error('Lỗi xóa toàn bộ giỏ hàng:', err);
+      setError(err.message || 'Không thể xóa toàn bộ giỏ hàng');
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, clearError, clearCart, cartItems, setError]);
+
   // Computed values
   const totalItems = getTotalItems();
   const totalPrice = getTotalPrice();
@@ -355,6 +469,7 @@ export const useCartViewModel = () => {
     fetchOrderById,
     refreshCart,
     clearAllErrors,
-    clearCart
+    clearCart,
+    clearAllCart
   };
 };
