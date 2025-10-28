@@ -73,21 +73,6 @@ export default function SettingsScreen() {
         {/* General Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Chung</Text>
-          {/* Thanh "thông báo" dẫn tới màn hình Bản đồ cửa hàng */}
-          <Pressable
-            onPress={() => router.push('/StoreMapScreen')}
-            style={({ pressed }) => [
-              styles.noticeBar,
-              { backgroundColor: theme.background, borderColor: theme.muted },
-              pressed && { opacity: 0.8 }
-            ]}
-          >
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="map-outline" size={22} color={theme.text} />
-              <Text style={[styles.noticeText, { color: theme.text }]}>Bản đồ cửa hàng linh kiện</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.tabIconDefault} />
-          </Pressable>
           <View style={[styles.sectionContent, { backgroundColor: theme.background, borderColor: theme.muted }]}>
             {renderMenuItem('person-outline', 'Chỉnh sửa hồ sơ', () => {
               // Navigate to edit profile
