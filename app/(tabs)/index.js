@@ -9,7 +9,7 @@ import { ProductVariantsAPI } from '../../services/productVariantsAPI';
 import { useCartViewModel } from '../../viewmodels/useCartViewModel';
 import { useHomeViewModel } from '../../viewmodels/useHomeViewModel';
 
-// Category icons mapping với Ionicons hiện đại
+// Ánh xạ tên danh mục → icon Ionicons
 const getCategoryIcon = (categoryName) => {
   const iconMap = {
     'RAM laptop': 'hardware-chip',
@@ -33,7 +33,7 @@ const getCategoryIcon = (categoryName) => {
     }
   }
   
-  return 'cube'; // Default icon
+  return 'cube'; // Mặc định nếu không khớp
 };
 
 export default function HomeScreen() {
@@ -45,18 +45,18 @@ export default function HomeScreen() {
   const { categories, featuredProducts, loading, error } = state;
   const { loadData, refreshData, clearError } = actions;
   
-  // Get cart functionality
+  // Lấy dữ liệu/biến từ ViewModel giỏ hàng
   const { cartItems, addToCart } = useCartViewModel();
   const cartItemsCount = cartItems?.length || 0;
   
-  // State for segmented control
+  // State cho thanh chuyển tab (Segmented Control)
   const [selectedSegment, setSelectedSegment] = useState(0);
   const slideAnimation = useRef(new Animated.Value(0)).current;
   
-  // State for product prices
+  // State lưu giá sản phẩm (lấy từ biến thể)
   const [productPrices, setProductPrices] = useState({});
 
-  // Load product prices from variants
+  // Tải giá sản phẩm từ danh sách biến thể
   useEffect(() => {
     const loadPrices = async () => {
       try {
@@ -86,22 +86,22 @@ export default function HomeScreen() {
     }
   }, [featuredProducts]);
 
-  // Load data on mount
+  // Tải dữ liệu khi mount màn hình
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Handle refresh
+  // Kéo để làm mới
   const handleRefresh = () => {
     refreshData();
   };
 
-  // Handle error
+  // Ẩn toast lỗi
   const handleErrorDismiss = () => {
     clearError();
   };
 
-  // Handle segment change with animation
+  // Chuyển segment kèm animation
   const handleSegmentChange = (segmentIndex) => {
     setSelectedSegment(segmentIndex);
     Animated.timing(slideAnimation, {
@@ -111,7 +111,7 @@ export default function HomeScreen() {
     }).start();
   };
 
-  // Handle add to cart
+  // Thêm nhanh vào giỏ
   const handleAddToCart = async (product) => {
     try {
       // Get the first variant of the product
@@ -144,9 +144,12 @@ export default function HomeScreen() {
     <TouchableOpacity
       style={styles.categoryCard}
       onPress={() => {
-        // Navigate to products with filter
+        // Điều hướng đến danh sách sản phẩm theo danh mục
         console.log('Navigate to category:', item.name);
-        router.push('/(tabs)/product');
+        router.push({
+          pathname: '/(tabs)/product',
+          params: { category: item.name }
+        });
       }}
     >
       <View style={styles.categoryIconContainer}>
@@ -160,26 +163,26 @@ export default function HomeScreen() {
     <TouchableOpacity
       style={styles.productCard}
       onPress={() => {
-        // Navigate to product detail
+        // Điều hướng đến chi tiết sản phẩm
         router.push({
           pathname: '/(tabs)/product-detail',
           params: { productId: item._id }
         });
       }}
     >
-      {/* Cart icon in top right corner */}
+      {/* Icon giỏ hàng góc trên bên phải */}
       <TouchableOpacity
         style={styles.cartIconContainer}
         onPress={(e) => {
-          e.stopPropagation(); // Prevent parent TouchableOpacity from triggering
-          // Add to cart functionality
+          e.stopPropagation(); // Ngăn sự kiện lan lên parent
+          // Gọi thêm vào giỏ hàng
           handleAddToCart(item);
         }}
       >
         <Ionicons name="cart-outline" size={20} color={theme.primary} />
       </TouchableOpacity>
 
-      {/* Icon container thay vì ảnh */}
+      {/* Thùng chứa icon (thay cho ảnh) */}
       <View style={styles.productIconContainer}>
         <View style={[styles.iconWrapper, { backgroundColor: theme.primary + '15' }]}>
           <Ionicons name="cube-outline" size={40} color={theme.primary} />

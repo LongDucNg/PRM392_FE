@@ -1,3 +1,4 @@
+// AuthService: điều phối đăng nhập/đăng ký và quản lý token an toàn
 import * as SecureStore from 'expo-secure-store';
 import type { AuthCredentials, AuthResponse, RegisterInput } from '../models';
 import { LoginAPI } from './loginAPI';
@@ -15,13 +16,13 @@ export class AuthService {
    */
   static async login(credentials: AuthCredentials): Promise<AuthResponse> {
     try {
-      // Call login API service
+      // Gọi API đăng nhập
       const data = await LoginAPI.login(credentials);
       
-      // Store token securely
+      // Lưu token vào SecureStore (mã hoá bởi hệ điều hành)
       await SecureStore.setItemAsync('auth-token', data.token);
       
-      // Log full token for Postman testing
+      // In ra token dạng Bearer để hỗ trợ test bằng Postman
       console.log('═══════════════════════════════════════');
       console.log('🔑 LOGIN SUCCESS - TOKEN FOR POSTMAN:');
       console.log('═══════════════════════════════════════');
@@ -42,13 +43,13 @@ export class AuthService {
    */
   static async register(input: RegisterInput): Promise<AuthResponse> {
     try {
-      // Call register API service
+      // Gọi API đăng ký
       const data = await RegisterAPI.register(input);
       
-      // Store token securely
+      // Lưu token vào SecureStore
       await SecureStore.setItemAsync('auth-token', data.token);
       
-      // Log full token for Postman testing
+      // In ra token dạng Bearer để hỗ trợ test bằng Postman
       console.log('═══════════════════════════════════════');
       console.log('🔑 REGISTER SUCCESS - TOKEN FOR POSTMAN:');
       console.log('═══════════════════════════════════════');
@@ -67,6 +68,7 @@ export class AuthService {
    */
   static async logout(): Promise<void> {
     try {
+      // Xoá token khỏi SecureStore
       await SecureStore.deleteItemAsync('auth-token');
       console.log('Token cleared successfully');
     } catch (error) {

@@ -1,3 +1,4 @@
+// ViewModel cho Trang chủ: quản lý state và gom logic gọi API
 import { useCallback, useState } from 'react';
 import type { Category, Product } from '../models';
 import { CategoriesAPI } from '../services/categoriesAPI';
@@ -29,7 +30,7 @@ export function useHomeViewModel() {
 
       console.log('🏠 Loading home data...');
 
-      // Load active categories
+      // Tải danh mục đang hoạt động để hiển thị ở trang chủ
       console.log('📋 Loading categories...');
       const categoriesResponse = await CategoriesAPI.getActiveCategories({
         page: 1,
@@ -41,10 +42,10 @@ export function useHomeViewModel() {
       console.log('✅ Categories loaded:', categoriesResponse.items.length);
       setCategories(categoriesResponse.items);
 
-      // Load featured products (chỉ 4 sản phẩm nổi bật)
+      // Tải sản phẩm nổi bật (giới hạn 4)
       console.log('🛍️ Loading featured products...');
       
-      // Load 4 sản phẩm nổi bật từ tất cả categories
+      // Lấy 4 sản phẩm nổi bật từ tất cả categories
       const featuredProductsResponse = await ProductsAPI.getProducts({
         page: 1,
         limit: 4, // Chỉ lấy 4 sản phẩm
@@ -55,7 +56,7 @@ export function useHomeViewModel() {
         }
       });
 
-      // Thêm category info vào products
+      // Gắn thêm tên danh mục vào mỗi sản phẩm để tiện render UI
       const productsWithCategory = featuredProductsResponse.items.map(product => {
         const category = categoriesResponse.items.find(cat => cat._id === product.categoryId);
         return {

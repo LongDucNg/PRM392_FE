@@ -1,3 +1,4 @@
+// ProductsAPI: các hàm gọi API liên quan đến sản phẩm và biến thể
 import { api } from '../lib/api';
 
 // Định nghĩa interface cho Product
@@ -76,7 +77,7 @@ export interface ProductVariantsQueryParams {
 
 /**
  * Products API Service
- * Xử lý tất cả API calls liên quan đến sản phẩm
+ * Xử lý tất cả API calls liên quan đến sản phẩm: list, detail, variants
  */
 export class ProductsAPI {
   /**
@@ -93,7 +94,7 @@ export class ProductsAPI {
       
       console.log('GET products successful:', data);
       
-      // Handle different response structures
+      // Hỗ trợ 2 dạng cấu trúc response: trực tiếp hoặc bọc trong data
       if (data.data) {
         return data.data; // If response has nested data structure
       }
@@ -101,7 +102,7 @@ export class ProductsAPI {
     } catch (error: any) {
       console.error('GET products error:', error);
       
-      // Handle specific error cases
+      // Chuẩn hoá thông báo lỗi thân thiện người dùng
       if (error.response?.status === 400) {
         throw new Error('Tham số truy vấn không hợp lệ');
       } else if (error.response?.status >= 500) {
@@ -136,7 +137,7 @@ export class ProductsAPI {
     } catch (error: any) {
       console.error('GET product by ID error:', error);
       
-      // Handle specific error cases
+      // Chuẩn hoá thông báo lỗi
       if (error.response?.status === 404) {
         throw new Error('Không tìm thấy sản phẩm');
       } else if (error.response?.status >= 500) {
@@ -171,7 +172,7 @@ export class ProductsAPI {
     } catch (error: any) {
       console.error('GET product variants error:', error);
       
-      // Handle specific error cases
+      // Chuẩn hoá thông báo lỗi
       if (error.response?.status === 400) {
         throw new Error('Tham số truy vấn không hợp lệ');
       } else if (error.response?.status >= 500) {
@@ -206,7 +207,7 @@ export class ProductsAPI {
     } catch (error: any) {
       console.error('GET product variant by ID error:', error);
       
-      // Handle specific error cases
+      // Chuẩn hoá thông báo lỗi
       if (error.response?.status === 404) {
         throw new Error('Không tìm thấy biến thể sản phẩm');
       } else if (error.response?.status >= 500) {
@@ -253,7 +254,7 @@ export class ProductsAPI {
     } catch (error: any) {
       console.error('GET product variants by product ID error:', error);
       
-      // Handle specific error cases
+      // Chuẩn hoá thông báo lỗi
       if (error.response?.status === 400) {
         throw new Error('Tham số truy vấn không hợp lệ');
       } else if (error.response?.status >= 500) {

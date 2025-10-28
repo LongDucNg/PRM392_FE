@@ -1,6 +1,7 @@
+// Màn hình danh sách sản phẩm: tìm kiếm, phân trang, lọc theo danh mục, thêm vào giỏ
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../constants/Colors';
@@ -13,6 +14,7 @@ export default function ProductsScreen() {
   const colorScheme = 'light';
   const theme = Colors[colorScheme];
   const router = useRouter();
+  const { category } = useLocalSearchParams();
   
   // Cart functionality
   const { addToCart, isAddingToCart, cartItems } = useCartViewModel();
@@ -20,15 +22,32 @@ export default function ProductsScreen() {
   
   // State management
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [productPrices, setProductPrices] = useState({}); // Lưu price cho từng sản phẩm
+  
+  // Danh sách category mẫu (map với categoryName trong sản phẩm)
+  const categories = [
+    { id: 'all', name: 'Tất cả', icon: 'grid' },
+    { id: 'CPU', name: 'CPU', icon: 'hardware-chip' },
+    { id: 'GPU', name: 'GPU', icon: 'desktop' },
+    { id: 'RAM', name: 'RAM', icon: 'hardware-chip' },
+    { id: 'SSD', name: 'SSD', icon: 'save' },
+    { id: 'HDD', name: 'HDD', icon: 'disc' },
+    { id: 'Mainboard', name: 'Mainboard', icon: 'desktop' },
+    { id: 'PSU', name: 'PSU', icon: 'flash' },
+    { id: 'Monitor', name: 'Monitor', icon: 'tv' },
+    { id: 'Keyboard', name: 'Keyboard', icon: 'keypad' },
+    { id: 'Mouse', name: 'Mouse', icon: 'radio-button-on' },
+  ];
 
-  // Load products function
+  // Hàm tải danh sách sản phẩm kèm phân trang và tìm kiếm
   const loadProducts = async (page = 1, search = '', reset = false) => {
     try {
       if (reset) {
@@ -48,7 +67,7 @@ export default function ProductsScreen() {
 
       const response = await ProductsAPI.getProducts(params);
       
-      // Handle API response structure
+      // Chuẩn hoá response từ API (có thể bọc trong data)
       const data = response.data || response;
       const items = data.items || [];
       const meta = data.meta || {};
@@ -63,7 +82,7 @@ export default function ProductsScreen() {
       setHasMore(page < (meta.totalPages || 1));
       setCurrentPage(page);
       
-      // Load prices for all products
+      // Tải giá từ product variants cho từng sản phẩm
       await loadProductPrices(items);
       
     } catch (error) {
@@ -75,7 +94,7 @@ export default function ProductsScreen() {
     }
   };
 
-  // Load prices from product variants
+  // Lấy giá thấp nhất từ các biến thể để hiển thị
   const loadProductPrices = async (productsToLoad) => {
     try {
       const prices = {};
@@ -105,6 +124,16 @@ export default function ProductsScreen() {
     loadProducts(1, '', true);
   }, []);
 
+  // Áp dụng filter category lấy từ params khi focus màn hình
+  useFocusEffect(
+    useCallback(() => {
+      if (category && typeof category === 'string') {
+        setSelectedCategory(category);
+      }
+      return () => {};
+    }, [category])
+  );
+
   // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
@@ -119,14 +148,36 @@ export default function ProductsScreen() {
     loadProducts(1, text, true);
   };
 
-  // Handle load more
+  // Handle category filter
+  const handleCategoryFilter = (categoryId) => {
+    setSelectedCategory(categoryId);
+  };
+
+  // Lọc sản phẩm theo danh mục được chọn
+  useEffect(() => {
+    if (selectedCategory === 'all') {
+      setFilteredProducts(products);
+    } else {
+      // Filter trực tiếp theo categoryName (như "CPU", "GPU", "RAM", etc.)
+      const filtered = products.filter(product => 
+        product.categoryName === selectedCategory
+      );
+      
+      console.log(`Filtering by category: ${selectedCategory}`);
+      console.log(`Found ${filtered.length} products`);
+      
+      setFilteredProducts(filtered);
+    }
+  }, [selectedCategory, products]);
+
+  // Tải thêm khi scroll tới cuối danh sách
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       loadProducts(currentPage + 1, searchText, false);
     }
   };
 
-  // Handle add to cart
+  // Thêm nhanh vào giỏ: lấy biến thể đầu tiên làm mặc định
   const handleAddToCart = async (product) => {
     try {
       // Validate product data before adding to cart
@@ -178,7 +229,7 @@ export default function ProductsScreen() {
     }
   };
 
-  // Render product item
+  // Render một item sản phẩm trong lưới
   const renderProduct = ({ item }) => (
     <View style={[styles.productCard, { backgroundColor: theme.background, borderColor: theme.muted }]}>
       {/* Cart icon in top right corner */}
@@ -309,6 +360,38 @@ export default function ProductsScreen() {
         </View>
       </View>
 
+      {/* Category Filter */}
+      <View style={styles.categoryContainer}>
+        <FlatList
+          horizontal
+          data={categories}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.categoryChip,
+                selectedCategory === item.id && { backgroundColor: theme.primary }
+              ]}
+              onPress={() => handleCategoryFilter(item.id)}
+            >
+              <Ionicons 
+                name={item.icon} 
+                size={18} 
+                color={selectedCategory === item.id ? 'white' : theme.text} 
+              />
+              <Text style={[
+                styles.categoryText,
+                { color: selectedCategory === item.id ? 'white' : theme.text }
+              ]}>
+                {item.name}
+              </Text>
+            </TouchableOpacity>
+          )}
+          keyExtractor={(item) => item.id}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryList}
+        />
+      </View>
+
       {/* Products List */}
       {loading && currentPage === 1 ? (
         <View style={styles.loadingContainer}>
@@ -317,7 +400,7 @@ export default function ProductsScreen() {
         </View>
       ) : (
         <FlatList
-          data={products}
+          data={selectedCategory === 'all' ? products : filteredProducts}
           renderItem={renderProduct}
           keyExtractor={(item) => item._id}
           numColumns={2}
@@ -399,6 +482,30 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     paddingVertical: 4,
+  },
+  // Category filter styles
+  categoryContainer: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  categoryList: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    marginRight: 8,
+    gap: 6,
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   // Products list styles
   productsList: {

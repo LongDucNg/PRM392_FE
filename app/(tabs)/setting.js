@@ -1,3 +1,4 @@
+// Màn hình Cài đặt: chứa mục điều hướng sang bản đồ cửa hàng
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
@@ -35,6 +36,7 @@ export default function SettingsScreen() {
   };
 
   const renderMenuItem = (icon, title, onPress, isDestructive = false) => (
+    // Item danh sách có icon trái, text và mũi tên điều hướng
     <Pressable
       style={({ pressed }) => [
         styles.menuItem,
@@ -71,6 +73,21 @@ export default function SettingsScreen() {
         {/* General Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Chung</Text>
+          {/* Thanh "thông báo" dẫn tới màn hình Bản đồ cửa hàng */}
+          <Pressable
+            onPress={() => router.push('/StoreMapScreen')}
+            style={({ pressed }) => [
+              styles.noticeBar,
+              { backgroundColor: theme.background, borderColor: theme.muted },
+              pressed && { opacity: 0.8 }
+            ]}
+          >
+            <View style={styles.menuItemLeft}>
+              <Ionicons name="map-outline" size={22} color={theme.text} />
+              <Text style={[styles.noticeText, { color: theme.text }]}>Bản đồ cửa hàng linh kiện</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.tabIconDefault} />
+          </Pressable>
           <View style={[styles.sectionContent, { backgroundColor: theme.background, borderColor: theme.muted }]}>
             {renderMenuItem('person-outline', 'Chỉnh sửa hồ sơ', () => {
               // Navigate to edit profile
@@ -83,6 +100,9 @@ export default function SettingsScreen() {
             {renderMenuItem('notifications-outline', 'Thông báo', () => {
               // Navigate to notifications settings
               router.push('/(tabs)/notifications-settings');
+            })}
+            {renderMenuItem('map-outline', 'Bản đồ cửa hàng', () => {
+              router.push('/StoreMapScreen');
             })}
           </View>
         </View>
@@ -128,6 +148,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  // Notice bar styles
+  noticeBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  noticeText: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginLeft: 12,
   },
   // Menu item styles
   menuItem: {

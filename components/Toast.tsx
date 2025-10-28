@@ -1,14 +1,15 @@
+// Component Toast hiển thị thông báo tạm thời với animation fade + slide
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import Colors from '../constants/Colors';
 import { useColorScheme } from './useColorScheme';
 
 interface ToastProps {
-  visible: boolean;
-  message: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  duration?: number;
-  onHide?: () => void;
+  visible: boolean; // Có hiển thị hay không
+  message: string; // Nội dung thông báo
+  type: 'success' | 'error' | 'warning' | 'info'; // Loại thông báo
+  duration?: number; // Thời gian auto-hide (ms)
+  onHide?: () => void; // Callback khi ẩn xong
 }
 
 export const Toast: React.FC<ToastProps> = ({
@@ -18,14 +19,14 @@ export const Toast: React.FC<ToastProps> = ({
   duration = 3000,
   onHide
 }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(-100)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current; // Opacity
+  const slideAnim = useRef(new Animated.Value(-100)).current; // Vị trí trượt xuống
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
 
   useEffect(() => {
     if (visible) {
-      // Show animation
+      // Hiển thị: chạy song song fade-in và slide-down
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -39,7 +40,7 @@ export const Toast: React.FC<ToastProps> = ({
         })
       ]).start();
 
-      // Auto hide after duration
+      // Tự động ẩn sau duration
       const timer = setTimeout(() => {
         hideToast();
       }, duration);
@@ -48,6 +49,7 @@ export const Toast: React.FC<ToastProps> = ({
     }
   }, [visible]);
 
+  // Ẩn Toast với animation ngược lại, sau đó gọi onHide
   const hideToast = () => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -65,6 +67,7 @@ export const Toast: React.FC<ToastProps> = ({
     });
   };
 
+  // Trả về màu nền/viền/icon/text theo loại thông báo
   const getToastStyle = () => {
     switch (type) {
       case 'success':
@@ -105,6 +108,7 @@ export const Toast: React.FC<ToastProps> = ({
     }
   };
 
+  // Icon kí tự đơn giản theo loại thông báo
   const getIcon = () => {
     switch (type) {
       case 'success':

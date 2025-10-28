@@ -18,7 +18,7 @@ import { ProductsAPI } from '../../services/productsAPI';
 import { useCartViewModel } from '../../viewmodels/useCartViewModel';
 
 /**
- * Checkout Screen - Màn hình đặt hàng
+ * Màn hình Đặt hàng: xem lại sản phẩm, nhập thông tin giao hàng, chọn thanh toán
  */
 export default function CheckoutScreen() {
   const colorScheme = 'light';
@@ -26,7 +26,7 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const searchParams = useLocalSearchParams();
   
-  // Get selected items from params
+  // Lấy danh sách item đã chọn từ params (nếu có)
   const selectedItemIds = searchParams.selectedItems
     ? searchParams.selectedItems.split(',')
     : null;
@@ -48,14 +48,14 @@ export default function CheckoutScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddressForm, setShowAddressForm] = useState(false);
   
-  // Track loaded products to avoid duplicate API calls
+  // Theo dõi sản phẩm đã tải để tránh gọi API trùng
   const loadedProductsRef = useRef(new Set());
   const lastLoadedItemsRef = useRef([]);
   
   // Phí ship cố định
   const SHIPPING_FEE = 20000;
 
-  // Memoize selected cart items to prevent unnecessary re-renders
+  // Ghi nhớ danh sách item chọn để hạn chế re-render
   const selectedCartItems = useMemo(() => {
     if (!cartItems || cartItems.length === 0) {
       return [];
@@ -69,7 +69,7 @@ export default function CheckoutScreen() {
     }
   }, [cartItems, selectedItemIds]);
 
-  // Load product info for selected items
+  // Tải thông tin sản phẩm cho các item được chọn
   const loadProductInfo = useCallback(async (items) => {
     if (!items || items.length === 0) {
       console.log('loadProductInfo: No items to load');
@@ -108,7 +108,7 @@ export default function CheckoutScreen() {
     }
   }, []);
 
-  // Load product info when selectedCartItems change
+  // Khi danh sách item thay đổi, kiểm tra và tải các sản phẩm cần thiết
   useEffect(() => {
     if (selectedCartItems && selectedCartItems.length > 0) {
       // Check if items have actually changed
@@ -122,7 +122,7 @@ export default function CheckoutScreen() {
     }
   }, [selectedCartItems]);
 
-  // Handle checkout
+  // Xử lý đặt hàng
   const handlePlaceOrder = async () => {
     // Validation
     if (!shippingPhone || !shippingAddress) {
@@ -194,7 +194,7 @@ export default function CheckoutScreen() {
     }
   };
 
-  // Calculate subtotal (chưa bao gồm phí ship)
+  // Tính tạm tính (chưa gồm phí ship)
   const calculateSubtotal = () => {
     if (!selectedCartItems || selectedCartItems.length === 0) {
       return 0;
@@ -204,12 +204,12 @@ export default function CheckoutScreen() {
     }, 0);
   };
 
-  // Calculate total (bao gồm phí ship)
+  // Tính tổng thanh toán (gồm phí ship)
   const calculateTotal = () => {
     return calculateSubtotal() + SHIPPING_FEE;
   };
 
-  // Render product item in checkout
+  // Render một dòng sản phẩm trong danh sách checkout
   const renderProductItem = ({ item }) => {
     const productInfo = productInfoMap[item.productId];
     const productName = productInfo?.name || 'Sản phẩm';

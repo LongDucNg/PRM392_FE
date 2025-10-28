@@ -1,3 +1,4 @@
+// Notification Store: on/off thông báo toàn app
 import { create } from 'zustand';
 
 interface NotificationState {

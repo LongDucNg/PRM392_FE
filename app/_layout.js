@@ -1,3 +1,4 @@
+// Root layout cấu hình theme, fonts và Stack navigation
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -81,6 +82,16 @@ function RootLayoutNav() {
       {isAuthenticated ? (
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          {/* Standalone screens pushed from tabs */}
+          <Stack.Screen 
+            name="StoreMapScreen" 
+            options={{ 
+              headerShown: true, 
+              title: 'Bản đồ cửa hàng',
+              headerBackTitle: 'Cài đặt',
+              headerBackTitleVisible: true,
+            }} 
+          />
         </Stack>
       ) : (
         <Stack screenOptions={{ headerShown: false }}>

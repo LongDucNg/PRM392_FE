@@ -2,15 +2,15 @@ import { create } from 'zustand';
 import { Cart, CartItem, Order } from '../models';
 
 /**
- * Cart State Interface
+ * Kiểu trạng thái cho Giỏ hàng (Cart)
  */
 interface CartState {
-  // Cart data
+  // Dữ liệu giỏ hàng
   cart: Cart | null;
   cartItems: CartItem[];
   orders: Order[];
   
-  // Loading states
+  // Trạng thái tải (loading)
   isLoading: boolean;
   isAddingToCart: boolean;
   isUpdatingCart: boolean;
@@ -18,10 +18,10 @@ interface CartState {
   isCreatingOrder: boolean;
   isFetchingOrders: boolean;
   
-  // Error states
+  // Trạng thái lỗi
   error: string | null;
   
-  // Actions
+  // Hành động cập nhật state
   setCart: (cart: Cart | null) => void;
   setCartItems: (items: CartItem[]) => void;
   addCartItem: (item: CartItem) => void;
@@ -30,7 +30,7 @@ interface CartState {
   setOrders: (orders: Order[]) => void;
   addOrder: (order: Order) => void;
   
-  // Loading actions
+  // Hành động cập nhật trạng thái loading
   setLoading: (loading: boolean) => void;
   setAddingToCart: (loading: boolean) => void;
   setUpdatingCart: (loading: boolean) => void;
@@ -38,11 +38,11 @@ interface CartState {
   setCreatingOrder: (loading: boolean) => void;
   setFetchingOrders: (loading: boolean) => void;
   
-  // Error actions
+  // Hành động xử lý lỗi
   setError: (error: string | null) => void;
   clearError: () => void;
   
-  // Computed values
+  // Giá trị tính toán từ state
   getTotalItems: () => number;
   getTotalPrice: () => number;
   clearCart: () => void;
@@ -52,12 +52,12 @@ interface CartState {
  * Cart Store - Zustand store cho quản lý giỏ hàng
  */
 export const useCartStore = create<CartState>((set, get) => ({
-  // Initial state
+  // Giá trị khởi tạo
   cart: null,
   cartItems: [],
   orders: [],
   
-  // Loading states
+  // Trạng thái loading
   isLoading: false,
   isAddingToCart: false,
   isUpdatingCart: false,
@@ -65,10 +65,10 @@ export const useCartStore = create<CartState>((set, get) => ({
   isCreatingOrder: false,
   isFetchingOrders: false,
   
-  // Error state
+  // Trạng thái lỗi
   error: null,
   
-  // Actions
+  // Hành động cập nhật dữ liệu giỏ hàng
   setCart: (cart) => set({ cart }),
   
   setCartItems: (items) => set({ cartItems: items }),
@@ -103,7 +103,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     cartItems: state.cartItems.map((item) => {
       if (item._id === itemId) {
         const updatedItem = { ...item, ...updates };
-        // Recalculate totalPrice if quantity or unitPrice changed
+        // Tính lại tổng giá nếu số lượng hoặc đơn giá thay đổi
         if (updates.quantity !== undefined || updates.unitPrice !== undefined) {
           updatedItem.totalPrice = updatedItem.unitPrice * updatedItem.quantity;
         }
@@ -123,7 +123,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     orders: [order, ...state.orders]
   })),
   
-  // Loading actions
+  // Hành động cập nhật trạng thái loading
   setLoading: (loading) => set({ isLoading: loading }),
   
   setAddingToCart: (loading) => set({ isAddingToCart: loading }),
@@ -136,12 +136,12 @@ export const useCartStore = create<CartState>((set, get) => ({
   
   setFetchingOrders: (loading) => set({ isFetchingOrders: loading }),
   
-  // Error actions
+  // Hành động lỗi
   setError: (error) => set({ error }),
   
   clearError: () => set({ error: null }),
   
-  // Computed values
+  // Giá trị tính toán
   getTotalItems: () => {
     const state = get();
     return state.cartItems.reduce((total, item) => total + item.quantity, 0);

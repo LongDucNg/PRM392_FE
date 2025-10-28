@@ -1,3 +1,4 @@
+// Màn hình chi tiết sản phẩm: hiển thị info, variants, chọn số lượng và thêm vào giỏ
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -27,7 +28,7 @@ export default function ProductDetailScreen() {
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
-  // Load product details
+  // Tải thông tin chi tiết sản phẩm
   const loadProductDetails = async () => {
     try {
       setLoading(true);
@@ -45,7 +46,7 @@ export default function ProductDetailScreen() {
     }
   };
 
-  // Load product variants
+  // Tải các biến thể sản phẩm (để chọn giá/thuộc tính)
   const loadProductVariants = async () => {
     try {
       setVariantsLoading(true);
@@ -69,7 +70,7 @@ export default function ProductDetailScreen() {
     }
   };
 
-  // Load data on mount
+  // Tải dữ liệu khi mount
   useEffect(() => {
     if (productId) {
       loadProductDetails();
@@ -77,7 +78,7 @@ export default function ProductDetailScreen() {
     }
   }, [productId]);
 
-  // Handle add to cart
+  // Thêm vào giỏ hàng với variant đã chọn và số lượng
   const handleAddToCart = async () => {
     try {
       if (!product || !selectedVariant) {
@@ -106,13 +107,13 @@ export default function ProductDetailScreen() {
     }
   };
 
-  // Handle variant selection
+  // Chọn biến thể
   const handleVariantSelect = (variant) => {
     setSelectedVariant(variant);
     setQuantity(1); // Reset quantity when changing variant
   };
 
-  // Handle quantity change
+  // Thay đổi số lượng (giới hạn [1, tồn kho])
   const handleQuantityChange = (change) => {
     const newQuantity = quantity + change;
     if (newQuantity >= 1 && newQuantity <= (selectedVariant?.inventory || 1)) {
@@ -120,7 +121,7 @@ export default function ProductDetailScreen() {
     }
   };
 
-  // Render variant option
+  // Render một lựa chọn biến thể
   const renderVariantOption = (variant) => (
     <TouchableOpacity
       key={variant._id}

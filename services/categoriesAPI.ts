@@ -1,9 +1,10 @@
+// CategoriesAPI: các hàm gọi API liên quan đến danh mục sản phẩm
 import { api } from '../lib/api';
 import type { CategoriesQueryParams, CategoriesResponse, Category } from '../models';
 
 /**
  * Categories API Service
- * Xử lý tất cả API calls liên quan đến danh mục sản phẩm
+ * Xử lý tất cả API calls liên quan đến danh mục sản phẩm: list, detail, active list, search
  */
 export class CategoriesAPI {
   /**
@@ -20,7 +21,7 @@ export class CategoriesAPI {
       
       console.log('GET categories successful:', data);
       
-      // Handle different response structures
+      // Hỗ trợ 2 dạng cấu trúc response: trực tiếp hoặc bọc trong data
       if (data.data) {
         return data.data; // If response has nested data structure
       }
@@ -28,7 +29,7 @@ export class CategoriesAPI {
     } catch (error: any) {
       console.error('GET categories error:', error);
       
-      // Handle specific error cases
+      // Chuẩn hoá thông báo lỗi thân thiện
       if (error.response?.status === 400) {
         throw new Error('Tham số truy vấn không hợp lệ');
       } else if (error.response?.status >= 500) {
@@ -58,7 +59,7 @@ export class CategoriesAPI {
     } catch (error: any) {
       console.error('GET category by ID error:', error);
       
-      // Handle specific error cases
+      // Chuẩn hoá thông báo lỗi
       if (error.response?.status === 404) {
         throw new Error('Không tìm thấy danh mục');
       } else if (error.response?.status >= 500) {
@@ -94,7 +95,7 @@ export class CategoriesAPI {
       
       console.log('GET active categories successful:', data);
       
-      // Handle different response structures
+      // Hỗ trợ 2 dạng cấu trúc response: trực tiếp hoặc bọc trong data
       if (data.data) {
         return data.data; // If response has nested data structure
       }
@@ -102,7 +103,7 @@ export class CategoriesAPI {
     } catch (error: any) {
       console.error('GET active categories error:', error);
       
-      // Handle specific error cases
+      // Chuẩn hoá thông báo lỗi
       if (error.response?.status === 400) {
         throw new Error('Tham số truy vấn không hợp lệ');
       } else if (error.response?.status >= 500) {
@@ -138,7 +139,7 @@ export class CategoriesAPI {
       
       console.log('GET categories search successful:', data);
       
-      // Handle different response structures
+      // Hỗ trợ 2 dạng cấu trúc response: trực tiếp hoặc bọc trong data
       if (data.data) {
         return data.data; // If response has nested data structure
       }
@@ -146,7 +147,7 @@ export class CategoriesAPI {
     } catch (error: any) {
       console.error('GET categories search error:', error);
       
-      // Handle specific error cases
+      // Chuẩn hoá thông báo lỗi
       if (error.response?.status === 400) {
         throw new Error('Tham số truy vấn không hợp lệ');
       } else if (error.response?.status >= 500) {

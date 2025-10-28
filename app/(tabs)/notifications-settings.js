@@ -8,17 +8,17 @@ import { NotificationService } from '../../services/notificationService';
 import { useNotificationStore } from '../../state/notifications';
 
 /**
- * Notifications Settings Screen - Màn hình cài đặt thông báo
+ * Màn hình Cài đặt thông báo: bật/tắt thông báo và xin quyền hệ thống
  */
 export default function NotificationsSettingsScreen() {
   const router = useRouter();
   const colorScheme = 'light';
   const theme = Colors[colorScheme];
 
-  // Sử dụng notification store
+  // Lấy trạng thái bật/tắt thông báo từ store
   const { enabled, setEnabled } = useNotificationStore();
 
-  // Kiểm tra trạng thái quyền thông báo khi vào màn hình
+  // Kiểm tra quyền thông báo khi vào màn hình
   useEffect(() => {
     checkNotificationPermission();
   }, []);
@@ -26,7 +26,7 @@ export default function NotificationsSettingsScreen() {
   const checkNotificationPermission = async () => {
     try {
       const hasPermission = await NotificationService.registerForPushNotificationsAsync();
-      // Cập nhật store nếu không có quyền
+      // Nếu không có quyền thì tắt công tắc trong store
       if (!hasPermission && enabled) {
         setEnabled(false);
       }
@@ -40,7 +40,7 @@ export default function NotificationsSettingsScreen() {
     setEnabled(value);
     
     if (value) {
-      // Yêu cầu quyền thông báo
+      // Khi bật: yêu cầu quyền thông báo từ hệ thống
       try {
         const hasPermission = await NotificationService.registerForPushNotificationsAsync();
         if (!hasPermission) {
@@ -52,13 +52,13 @@ export default function NotificationsSettingsScreen() {
         setEnabled(false);
       }
     } else {
-      // Tắt thông báo - không gửi thông báo nữa
+      // Khi tắt: chỉ cập nhật flag, app sẽ không gửi thông báo
       console.log('Đã tắt thông báo');
     }
   };
 
   const handleBack = () => {
-    // Navigate về setting screen (không phải back về tabs)
+    // Điều hướng về màn hình Cài đặt (không back về Tabs)
     router.replace('/(tabs)/setting');
   };
 

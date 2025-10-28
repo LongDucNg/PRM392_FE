@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('error');
 
-  // Animation on mount
+  // Animation khi mount (fade-in form)
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -30,7 +30,7 @@ export default function LoginScreen() {
     }).start();
   }, []);
 
-  // Validate email/phone in real-time
+  // Kiểm tra định dạng Email/SĐT theo thời gian thực
   useEffect(() => {
     if (email) {
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -46,7 +46,7 @@ export default function LoginScreen() {
     }
   }, [email]);
 
-  // Show toast when there's an error
+  // Hiển thị toast khi có lỗi từ ViewModel
   useEffect(() => {
     if (error) {
       setToastMessage(error);
@@ -55,7 +55,7 @@ export default function LoginScreen() {
     }
   }, [error]);
 
-  // Validate password in real-time
+  // Kiểm tra mật khẩu theo thời gian thực (>= 6 ký tự)
   useEffect(() => {
     if (password && password.length < 6) {
       setPasswordError('Mật khẩu phải có ít nhất 6 ký tự');
@@ -71,7 +71,7 @@ export default function LoginScreen() {
       setToastType('success');
       setShowToast(true);
       
-      // Gửi thông báo push notification
+      // Gửi thông báo push notification sau đăng nhập thành công
       try {
         await NotificationService.sendLoginSuccessNotification();
       } catch (error) {
