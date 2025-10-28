@@ -54,7 +54,7 @@ export default function TabLayout() {
         }} 
       />
       <Tabs.Screen 
-        name="profile" 
+        name="setting" 
         options={{ 
           title: 'Cài đặt',
           tabBarIcon: ({ color, focused }) => <TabBarIcon name="settings" color={color} focused={focused} /> 
@@ -76,6 +76,13 @@ export default function TabLayout() {
       />
       <Tabs.Screen 
         name="checkout" 
+        options={{ 
+          href: null, // Ẩn khỏi tab bar
+          headerShown: false 
+        }} 
+      />
+      <Tabs.Screen 
+        name="notifications-settings" 
         options={{ 
           href: null, // Ẩn khỏi tab bar
           headerShown: false 

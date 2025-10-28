@@ -4,6 +4,7 @@ import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, TextInput, Vi
 import { Toast } from '../../components/Toast';
 import { useColorScheme } from '../../components/useColorScheme';
 import Colors from '../../constants/Colors';
+import { NotificationService } from '../../services/notificationService';
 import { useLoginViewModel } from '../../viewmodels/useLoginViewModel';
 
 export default function LoginScreen() {
@@ -69,6 +70,14 @@ export default function LoginScreen() {
       setToastMessage('Đăng nhập thành công!');
       setToastType('success');
       setShowToast(true);
+      
+      // Gửi thông báo push notification
+      try {
+        await NotificationService.sendLoginSuccessNotification();
+      } catch (error) {
+        console.error('Lỗi gửi thông báo đăng nhập:', error);
+      }
+      
       setTimeout(() => {
         router.replace('/(tabs)');
       }, 1000);

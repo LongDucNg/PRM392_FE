@@ -310,7 +310,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.avatarContainer}
-            onPress={() => router.push('/(tabs)/profile')}
+            onPress={() => router.push('/(tabs)/setting')}
           >
             <Ionicons name="person-circle-outline" size={32} color={theme.primary} />
           </TouchableOpacity>

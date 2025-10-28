@@ -81,8 +81,8 @@ export default function SettingsScreen() {
               console.log('Navigate to change password');
             })}
             {renderMenuItem('notifications-outline', 'Thông báo', () => {
-              // Navigate to notifications
-              console.log('Navigate to notifications');
+              // Navigate to notifications settings
+              router.push('/(tabs)/notifications-settings');
             })}
           </View>
         </View>
@@ -149,3 +149,4 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
 });
+

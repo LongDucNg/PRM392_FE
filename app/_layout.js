@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useColorScheme } from '../components/useColorScheme';
+import { NotificationService } from '../services/notificationService';
 import { useAuthStore } from '../state/auth';
 
 export { ErrorBoundary } from 'expo-router';
@@ -50,6 +51,25 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // Request notification permissions when app starts
+  useEffect(() => {
+    const requestNotificationPermissions = async () => {
+      try {
+        console.log('🔔 Yêu cầu quyền gửi thông báo...');
+        const hasPermission = await NotificationService.registerForPushNotificationsAsync();
+        if (hasPermission) {
+          console.log('✅ Đã cấp quyền gửi thông báo');
+        } else {
+          console.log('⚠️ Người dùng chưa cấp quyền gửi thông báo');
+        }
+      } catch (error) {
+        console.error('❌ Lỗi khi yêu cầu quyền thông báo:', error);
+      }
+    };
+
+    requestNotificationPermissions();
+  }, []);
 
   const theme = useMemo(() => 
     colorScheme === 'dark' ? DarkTheme : DefaultTheme, 

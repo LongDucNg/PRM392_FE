@@ -2,17 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Colors from '../../constants/Colors';
+import { NotificationService } from '../../services/notificationService';
 import { ProductsAPI } from '../../services/productsAPI';
 import { useCartViewModel } from '../../viewmodels/useCartViewModel';
 
@@ -149,6 +150,24 @@ export default function CheckoutScreen() {
       };
       
       const order = await createOrder(orderData);
+      
+      // Gửi thông báo push notification
+      try {
+        if (order && order._id) {
+          // Gửi thông báo đặt hàng thành công
+          await NotificationService.sendOrderCreatedNotification(order._id);
+          
+          // Nếu không phải COD, gửi thông báo thanh toán thành công
+          if (orderData.paymentMethod !== 'cash_on_delivery') {
+            await NotificationService.sendPaymentSuccessNotification(
+              order._id,
+              calculateTotal()
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Lỗi gửi thông báo đặt hàng:', error);
+      }
       
       // Show success message
       Alert.alert(
